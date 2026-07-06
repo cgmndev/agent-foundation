@@ -1,6 +1,6 @@
 ---
 doc: indice
-version: 1.1
+version: 1.2
 fecha: 2026-07-06
 estado: vigente
 tipo: capa-durable
@@ -28,6 +28,7 @@ Suite de decisiones y convenciones de ingeniería para iniciar cualquier proyect
 | [10-checklist-dia-cero.md](10-checklist-dia-cero.md) | Checklist ejecutable para arrancar un proyecto | El primer día, en orden |
 | [11-sistema-specs.md](11-sistema-specs.md) | Sistema de especificaciones: decisiones y porqués (snapshot, capa durable, umbrales) | Ante dudas de si/cómo especificar un trabajo |
 | [12-guia-specs.md](12-guia-specs.md) | Guía operativa de specs: estructura, hashing, trazabilidad AC→test, skills, hooks | Al crear, cambiar o cerrar cualquier spec |
+| [13-onboarding.md](13-onboarding.md) | Tutorial de humano a humano: setup, ciclo completo de una feature, guardias y errores típicos | Primer día de un dev nuevo (el agente no lo carga) |
 | [plantillas/](plantillas/) | Plantillas canónicas: spec, plan, tasks, ADR, architecture, domain, CLAUDE.md | Al instanciar cualquier artefacto |
 
 ## Cómo usar esta suite
