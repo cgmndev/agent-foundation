@@ -1,0 +1,195 @@
+---
+doc: guia-specs
+version: 1.1
+fecha: 2026-07-06
+estado: vigente
+tipo: capa-durable
+---
+
+# 12 — Guía Operativa de Especificaciones
+
+Manual de ejecución del sistema definido en [11-sistema-specs.md](11-sistema-specs.md). Todo lo necesario para operar specs sin decisiones pendientes. Plantillas en [plantillas/](plantillas/).
+
+## §1. Estructura de directorios canónica
+
+```
+proyecto/
+├── CLAUDE.md                          # Delgado (plantillas/plantilla-claude.md)
+├── specs/
+│   ├── active/
+│   │   └── 2026-07-nombre-feature/    # Una carpeta por feature
+│   │       ├── spec.md
+│   │       ├── plan.md
+│   │       └── tasks.md
+│   └── archive/
+│       └── 2026-07/                   # Mes de CIERRE
+│           └── 2026-06-otra-feature/  # Carpeta completa movida al cerrar
+├── docs/
+│   ├── foundation/                     # Esta suite (snapshot; incluye plantillas/)
+│   ├── architecture.md                # Vivo. Único. < 500 líneas
+│   ├── domain.md                      # Vivo. Único. < 500 líneas
+│   └── decisions/
+│       └── 0001-....md                # ADRs inmutables, numeración secuencial
+└── apps/ · packages/ · infra/         # Layout completo: 03-estructura-repo.md
+```
+
+Reglas:
+- La carpeta de feature se nombra `AAAA-MM-slug-kebab-case`. La fecha es la de creación de la spec, no la de cierre.
+- Los tres archivos dentro se llaman siempre igual (`spec.md`, `plan.md`, `tasks.md`); la identidad la da la carpeta. Esto hace los skills y hooks triviales de implementar.
+- Al archivar se mueve la **carpeta completa** a `archive/AAAA-MM/` (mes de cierre). Nunca archivos sueltos.
+- Si el trabajo no requiere spec (Decisión 6), la carpeta puede contener solo `plan.md` y/o `tasks.md`. La convención de nombres no cambia.
+
+## §2. Frontmatter y hashing
+
+Cada artefacto lleva frontmatter (definido en cada plantilla). Los campos de encadenado son:
+
+- `spec.md` → `source_hash`: SHA-256 del propio archivo, calculado al pasar a `active` y recalculado en cada bump de versión.
+- `plan.md` → `spec_hash`: copia del `source_hash` de la spec contra la que se escribió.
+- `tasks.md` → `plan_hash`: SHA-256 del plan contra el que se generó.
+
+**Detección de staleness (drift-check):** si `plan.spec_hash ≠ spec.source_hash` → el plan está desfasado y el agente debe negarse a implementar hasta regenerar/revisar el plan. Ídem para tasks vs plan. Cálculo del hash:
+
+```bash
+# El hash se calcula sobre el contenido SIN el frontmatter, para evitar
+# el problema circular (el hash está dentro del archivo):
+sed '1{/^---$/!q;};1,/^---$/d' spec.md | sha256sum | cut -d' ' -f1
+```
+
+Los hashes los calculan y escriben los skills (`/activate-spec`, `/change-spec`); ni humano ni agente los computan a mano. Implementación canónica: `scripts/spec-hash.mjs` del plugin `agent-foundation` (el `sed` de arriba documenta la semántica).
+
+## §3. Trazabilidad Acceptance Criteria → Tests
+
+Convención de tres partes:
+
+1. **En la spec:** cada criterio tiene ID estable `AC-NN` (dos o más dígitos) en la tabla de acceptance criteria. Los IDs nunca se reutilizan ni renumeran; si un AC se elimina en un bump de versión, su número muere con él.
+2. **En los tests** (Vitest, ejecutados con `bun run test` — nunca `bun test`): el ID aparece literal en el nombre del test o del describe block:
+
+```typescript
+describe("AC-01: el usuario puede exportar el reporte en PDF", () => {
+  test("genera PDF con los campos obligatorios", () => { ... });
+  test("rechaza exportación sin permisos", () => { ... });
+});
+
+// O en tests sueltos:
+test("AC-03: la sesión expira a los 30 min de inactividad", () => { ... });
+```
+
+3. **Verificación mecánica** (la ejecuta `/close-spec` vía `scripts/check-acs.mjs` del plugin; el bloque siguiente documenta la semántica):
+
+```bash
+# IDs de la spec:
+grep -oE 'AC-[0-9]{2,}' specs/active/$FEATURE/spec.md | sort -u > /tmp/acs_spec
+# IDs presentes en tests (monorepo completo):
+grep -rhoE 'AC-[0-9]{2,}' --include='*.test.ts' --include='*.test.tsx' apps packages | sort -u > /tmp/acs_tests
+# ACs sin test = bloqueo del cierre:
+comm -23 /tmp/acs_spec /tmp/acs_tests
+```
+
+ACs de verificación manual (raros, ej. "el cliente valida visualmente el diseño") se marcan `Verificación: manual` en la tabla de la spec y quedan exentos del grep, pero `/close-spec` exige confirmación explícita de que se validaron.
+
+## §4. Workflow completo de una feature
+
+| Paso | Quién | Qué ocurre |
+|---|---|---|
+| 1. Origen | Tú + cliente | La necesidad nace (reunión, nota en Obsidian, mensaje). Si madura, se destila del vault al repo |
+| 2. `/new-spec` | Tú + agente | El skill crea la carpeta y el `spec.md` en `draft` desde plantilla. El agente entrevista: contexto, objetivo, alcance, ACs. Tú editas y cierras preguntas abiertas |
+| 3. Aprobación | Cliente (si aplica) | La spec en lenguaje de negocio se revisa con el cliente. Al aprobar: `status: active`, se calcula `source_hash` |
+| 4. Plan | Agente + tú | El agente genera `plan.md` desde la spec + `docs/architecture.md` + ADRs. Tú revisas los trade-offs — este es el review de mayor valor de todo el ciclo |
+| 5. Tasks | Agente | Genera `tasks.md` desde el plan. Revisión rápida de orden y granularidad |
+| 6. Implementación | Agente(s) | Ejecuta tasks marcando checkboxes. Los tests de ACs se escriben ANTES o JUNTO a cada task que los satisface, nunca al final |
+| 7. Verificación | Tú | Suite completa verde + revisión del diff. El drift-check debe estar limpio |
+| 8. `/close-spec` | Skill + tú | Ritual de cierre (§7). Extracción de órganos + archivo |
+
+**Presupuesto de tiempo humano de referencia** (feature mediana, 2–4 días de implementación): pasos 2–3 ≈ 1–2 h; paso 4 ≈ 30–45 min de review; paso 8 ≈ 10–15 min. Si consistentemente gastas más, la feature era más grande de lo estimado o las plantillas necesitan ajuste.
+
+## §5. Protocolo de cambio mid-feature (operativa)
+
+Implementación del árbol de la Decisión 7. Ante cualquier petición de cambio con spec `active`:
+
+```
+¿El cambio altera algún AC?
+├─ NO → editar plan.md/tasks.md, recalcular hashes. FIN.
+└─ SÍ → ¿Afecta ≤ 1/3 de los ACs Y no invalida trabajo implementado?
+    ├─ SÍ → /change-spec:
+    │        1. Editar spec.md (ACs nuevos con IDs nuevos; los eliminados
+    │           se tachan, no se borran: ~~AC-04: ...~~ [eliminado v1.1])
+    │        2. Bump version + entrada en ## Changelog de la spec
+    │        3. Recalcular source_hash
+    │        4. Re-aprobar con cliente si participó en la v anterior
+    │        5. Regenerar secciones afectadas de plan/tasks
+    └─ NO → Cerrar como superseded:
+             1. /close-spec parcial (extraer lo implementado que sirve)
+             2. Nueva spec con supersedes: apuntando a la anterior
+             3. La nueva spec hereda los ACs vigentes que sobreviven
+                (mismos IDs, para no romper trazabilidad de tests ya escritos)
+```
+
+La regla de "tachar, no borrar" ACs mantiene la spec legible como historia dentro de su propia vida activa, sin caer en mantener specs cerradas.
+
+## §6. Trabajo no-feature (referencia rápida)
+
+| Tipo | Artefactos | Nota operativa |
+|---|---|---|
+| Bug simple | Ninguno + test de regresión | El test lleva ID del issue: `test("BUG-142: ...")` |
+| Bug complejo | Solo `plan.md` | Secciones: síntoma, hipótesis, diagnóstico, fix, verificación |
+| Refactor | `plan.md` + `tasks.md` | El plan declara la invariante de comportamiento y la suite que la protege |
+| Migración | Spec completa | ACs = verificaciones post-migración + criterio de rollback |
+| Spike | Nada durante; spec a posteriori si se productiviza | La spec retroactiva documenta lo construido de verdad, no lo imaginado |
+
+## §7. Behavior specs de los skills
+
+Implementados como skills del plugin `agent-foundation` (`skills/<nombre>/SKILL.md` en el repo de la fundación); este apartado es su contrato de comportamiento. Las plantillas se leen de `docs/foundation/plantillas/` del proyecto (fallback: las bundled en el plugin).
+
+### `/new-spec <slug>`
+1. Validar que no existe `specs/active/*-<slug>`.
+2. Crear carpeta `specs/active/AAAA-MM-<slug>/` con `spec.md` desde plantilla (`status: draft`, fecha, autor).
+3. Entrevistar al usuario sección por sección (contexto → objetivo → alcance → ACs → restricciones). No inventar contenido: preguntar.
+4. Al terminar, listar las preguntas abiertas restantes y recordar que la spec no puede pasar a `active` con preguntas abiertas.
+5. NO crear plan.md ni tasks.md (eso ocurre tras la aprobación).
+
+### `/activate-spec <slug>` (o paso manual)
+1. Verificar sección "Preguntas abiertas" vacía.
+2. `status: active`, calcular y escribir `source_hash`.
+3. Ofrecer generar `plan.md` (requiere leer `docs/architecture.md` + ADRs relevantes antes de proponer enfoque).
+
+### `/change-spec <slug>`
+1. Ejecutar el árbol de §5 preguntando al usuario qué ACs afecta el cambio.
+2. Aplicar la rama correspondiente (edición con bump, o cierre + nueva spec).
+3. Nunca editar sin dejar changelog + version + hash nuevos.
+
+### `/close-spec <slug>`
+1. Verificar suite de tests verde.
+2. Ejecutar verificación de trazabilidad (§3). ACs sin test → BLOQUEO (listar cuáles).
+3. Ritual de extracción de órganos (preguntas al usuario, con propuesta del agente):
+   - "¿Alguna decisión de plan.md merece ADR?" → si sí, generar borrador desde plantilla.
+   - "¿Cambió algo del dominio/reglas de negocio?" → si sí, proponer diff sobre `docs/domain.md`.
+   - "¿Cambió la arquitectura?" → si sí, proponer diff sobre `docs/architecture.md`.
+4. `status: implemented` (o `superseded` en cierre parcial), mover carpeta a `specs/archive/AAAA-MM/`.
+5. Reportar resumen: ACs verificados, órganos extraídos, ubicación final.
+
+## §8. Hooks de guardia
+
+**archive-guard** — impedir que specs muertas contaminen contexto. PreToolUse sobre Read/Grep/Glob:
+
+```bash
+# Recibe la ruta objetivo de la herramienta:
+if [[ "$path" == *"/specs/archive/"* ]]; then
+  echo "BLOCK: spec archivada — no es contexto válido." >&2
+  echo "Si necesitas historia, pídelo explícitamente al usuario." >&2
+  exit 2   # exit 2 = bloquear la acción en hooks de Claude Code
+fi
+```
+
+Notas: cubre la lectura *espontánea* del agente (Read/Grep/Glob); `cat` vía Bash lo bypasea y es aceptable — el hook protege contra contaminación accidental de contexto, no es adversarial (guardrails como trust infrastructure). Si tú pides revisar una spec histórica, se lee y se comunica.
+
+**drift-check** — PreToolUse sobre Edit/Write en `apps/` y `packages/`: si existe una feature activa y `plan.spec_hash ≠ spec.source_hash` (o `tasks.plan_hash ≠ hash(plan)`), bloquear con "Plan desfasado respecto a spec vX — regenerar antes de implementar".
+
+Implementación: `scripts/guards/archive-guard.mjs` y `scripts/guards/drift-check.mjs` del plugin, despachados por `scripts/hooks/pre-tool-use.mjs`. Inventario completo de hooks del proyecto (incluye los de stack): [09-agentes.md](09-agentes.md).
+
+## §9. CLAUDE.md
+
+Plantilla canónica única: [plantillas/plantilla-claude.md](plantillas/plantilla-claude.md) — fusiona las reglas de stack y de specs; no existe otra versión. Presupuesto: <~150 líneas rellenada; si crece, algo que debería vivir en `docs/` se está colando.
+
+## §10. Arranque de proyecto
+
+El checklist único de día cero vive en [10-checklist-dia-cero.md](10-checklist-dia-cero.md): su Fase 0 instancia esta estructura (docs vivos, `decisions/`, `specs/`) y su Fase 2 instala skills y hooks.

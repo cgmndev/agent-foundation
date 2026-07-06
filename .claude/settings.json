@@ -1,0 +1,14 @@
+{
+  "enabledPlugins": {
+    "agent-foundation@agent-foundation": true
+  },
+  "permissions": {
+    "deny": [
+      "Read(**/.env)",
+      "Read(**/.env.local)",
+      "Read(**/secrets/**)",
+      "Bash(git push --force:*)",
+      "Bash(git push -f:*)"
+    ]
+  }
+}

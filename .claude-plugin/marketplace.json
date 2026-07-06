@@ -1,0 +1,14 @@
+{
+  "name": "agent-foundation",
+  "owner": {
+    "name": "Claudio",
+    "email": "claudio@cgmn.dev"
+  },
+  "plugins": [
+    {
+      "name": "agent-foundation",
+      "source": "./",
+      "description": "Suite + harness de la fundación agent-first: docs de decisiones, skills de specs, hooks de enforcement y agente revisor."
+    }
+  ]
+}
