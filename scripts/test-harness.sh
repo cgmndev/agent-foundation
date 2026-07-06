@@ -1,6 +1,6 @@
 #!/bin/bash
-# Batería de pruebas del harness agent-foundation: 40 aserciones contra un
-# proyecto fixture temporal (guardias, CLIs de hashing/trazabilidad y hooks de
+# Batería de pruebas del harness agent-foundation contra un proyecto fixture
+# temporal (guardias, CLIs de hashing/trazabilidad y hooks de
 # sesión). Correr tras cualquier cambio en scripts/: `bash scripts/test-harness.sh`.
 # Exit code = número de fallos.
 REPO="$(cd "$(dirname "$0")/.." && pwd)"
@@ -96,12 +96,15 @@ contains "drift menciona restampar" "restampar" "$OUT"
 
 # guard drift-check bloquea Edit en apps/
 P="{\"tool_name\":\"Edit\",\"tool_input\":{\"file_path\":\"$FIX/apps/api/src/x.ts\",\"old_string\":\"a\",\"new_string\":\"b\"},\"cwd\":\"$FIX\"}"
-OUT=$(echo "$P" | node "$REPO/scripts/hooks/pre-tool-use.mjs" 2>&1); check "drift-check bloquea Edit en apps/" 2 $?
+OUT=$(echo "$P" | node "$REPO/scripts/hooks/pre-tool-use.mjs" 2>&1); RC=$?
+check "drift-check no bloquea en seco (exit 0)" 0 $RC
+contains "drift-check pide confirmación (ask)" '"permissionDecision":"ask"' "$OUT"
 contains "drift-check nombra la feature" "2026-07-demo" "$OUT"
 
-# restampar → pasa
+# restampar → pasa limpio (sin ask)
 node "$REPO/scripts/spec-hash.mjs" stamp specs/active/2026-07-demo spec plan tasks >/dev/null 2>&1
-OUT=$(echo "$P" | node "$REPO/scripts/hooks/pre-tool-use.mjs" 2>&1); check "tras restamp, Edit pasa" 0 $?
+OUT=$(echo "$P" | node "$REPO/scripts/hooks/pre-tool-use.mjs" 2>&1); RC=$?
+[ -z "$OUT" ] && [ $RC = 0 ]; check "tras restamp, Edit pasa sin ask" 0 $?
 
 # ── 4. archive-guard ─────────────────────────────────────────────────────
 P="{\"tool_name\":\"Read\",\"tool_input\":{\"file_path\":\"$FIX/specs/archive/2026-06/2026-05-vieja/spec.md\"},\"cwd\":\"$FIX\"}"
@@ -110,6 +113,11 @@ P="{\"tool_name\":\"Grep\",\"tool_input\":{\"pattern\":\"x\",\"path\":\"$FIX/spe
 OUT=$(echo "$P" | node "$REPO/scripts/hooks/pre-tool-use.mjs" 2>&1); check "archive-guard bloquea Grep" 2 $?
 P="{\"tool_name\":\"Read\",\"tool_input\":{\"file_path\":\"$FIX/specs/active/2026-07-demo/spec.md\"},\"cwd\":\"$FIX\"}"
 OUT=$(echo "$P" | node "$REPO/scripts/hooks/pre-tool-use.mjs" 2>&1); check "specs/active sí se lee" 0 $?
+
+# telemetría pasiva de lecturas de docs de fundación
+P="{\"tool_name\":\"Read\",\"tool_input\":{\"file_path\":\"$FIX/docs/foundation/01-stack.md\"},\"cwd\":\"$FIX\"}"
+OUT=$(echo "$P" | node "$REPO/scripts/hooks/pre-tool-use.mjs" 2>&1); check "lectura de doc de fundación pasa" 0 $?
+grep -q '01-stack.md' "$FIX/.git/agent-foundation-doc-reads.log" 2>/dev/null; check "telemetría registra la lectura" 0 $?
 
 # ── 5. block-secrets ─────────────────────────────────────────────────────
 P="{\"tool_name\":\"Write\",\"tool_input\":{\"file_path\":\"$FIX/.env\",\"content\":\"X=1\"},\"cwd\":\"$FIX\"}"
@@ -126,6 +134,9 @@ P="{\"tool_name\":\"Bash\",\"tool_input\":{\"command\":\"bun add left-pad\"},\"c
 OUT=$(echo "$P" | node "$REPO/scripts/hooks/pre-tool-use.mjs" 2>&1); RC=$?
 check "bun add → exit 0 (ask via JSON)" 0 $RC
 contains "bun add → permissionDecision ask" '"permissionDecision":"ask"' "$OUT"
+P="{\"tool_name\":\"Bash\",\"tool_input\":{\"command\":\"pnpm add left-pad\"},\"cwd\":\"$FIX\"}"
+OUT=$(echo "$P" | node "$REPO/scripts/hooks/pre-tool-use.mjs" 2>&1)
+contains "pnpm add → ask" '"permissionDecision":"ask"' "$OUT"
 P="{\"tool_name\":\"Bash\",\"tool_input\":{\"command\":\"bun install\"},\"cwd\":\"$FIX\"}"
 OUT=$(echo "$P" | node "$REPO/scripts/hooks/pre-tool-use.mjs" 2>&1); RC=$?
 [ -z "$OUT" ] && [ $RC = 0 ]; check "bun install (bare) pasa sin ask" 0 $?
@@ -177,6 +188,15 @@ P="{\"tool_name\":\"Bash\",\"tool_input\":{\"command\":\"bun run check\"},\"tool
 echo "$P" | node "$REPO/scripts/hooks/post-tool-use.mjs"; check "post-tool-use escribe marcador" 0 $?
 P="{\"cwd\":\"$FIX\",\"stop_hook_active\":false}"
 OUT=$(echo "$P" | node "$REPO/scripts/hooks/stop.mjs" 2>&1); check "tras marcador, stop pasa" 0 $?
+
+# marcador con pnpm shorthand (regex PM-agnóstico de post-tool-use)
+touch apps/api/src/otro.ts
+P="{\"cwd\":\"$FIX\",\"stop_hook_active\":false}"
+OUT=$(echo "$P" | node "$REPO/scripts/hooks/stop.mjs" 2>&1); check "stop vuelve a bloquear con cambio nuevo" 2 $?
+P="{\"tool_name\":\"Bash\",\"tool_input\":{\"command\":\"pnpm check\"},\"tool_response\":{},\"cwd\":\"$FIX\"}"
+echo "$P" | node "$REPO/scripts/hooks/post-tool-use.mjs"; check "post-tool-use acepta pnpm shorthand" 0 $?
+P="{\"cwd\":\"$FIX\",\"stop_hook_active\":false}"
+OUT=$(echo "$P" | node "$REPO/scripts/hooks/stop.mjs" 2>&1); check "marcador pnpm desbloquea stop" 0 $?
 
 echo ""
 echo "══════ RESULTADO: $PASS PASS · $FAIL FAIL ══════"

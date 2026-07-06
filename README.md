@@ -28,10 +28,12 @@ Maquinaria centralizada (se actualiza vía plugin) · decisiones snapshoteadas p
 
 ## Estado
 
-- Suite unificada v1.1 (2026-07-06) · Harness v0.1.0 (40/40 pruebas en verde).
+- Suite unificada (2026-07-06, ronda 1 de iteración aplicada) · Harness v0.3.0 · batería de pruebas en verde.
+- **Congelado en features** hasta la validación real (primera feature de un proyecto real por el ciclo completo, checkpoint C1-C6). Solo entran fixes de fricción real.
 
 ## Pendiente
 
-1. Automatizar el scaffold del monorepo (Fase 1 del checklist) como skill o template repo.
-2. Integrar el harness de roles (GERENTE/DEVs) como agentes del plugin — `agents/revisor.md` es la semilla.
-3. Migración completa del contenido de la suite a inglés (v2; los identificadores y rutas ya lo están).
+1. **Validación real (descongela el resto):** primera feature por `/new-spec → /activate-spec → implementación → /close-spec` en un proyecto real, midiendo C1-C6.
+2. Automatizar el scaffold del monorepo — tras 1-2 ejecuciones manuales del checklist.
+3. Harness de roles (GERENTE/DEVs) como agentes del plugin — `agents/revisor.md` es la semilla.
+4. Migración del contenido a inglés (v2), con poda de docs guiada por la telemetría de lecturas.

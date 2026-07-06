@@ -1,5 +1,6 @@
 ---
 type: plan
+format: 1                # versión del formato del artefacto; los skills la verifican (12-guia §2)
 feature: <slug-kebab-case>
 status: draft            # draft | active | stale
 version: 1.0
@@ -16,7 +17,7 @@ REGLAS:
 - SOLO el CÓMO. El QUÉ vive en spec.md y no se repite aquí.
 - Se genera leyendo: spec.md + docs/architecture.md + ADRs relevantes.
 - Si spec_hash ≠ source_hash actual de la spec → este plan está stale
-  y no es base válida para implementar (drift-check lo bloquea).
+  y no es base válida para implementar (drift-check lo señala).
 - Este es el documento donde el review humano aporta más valor:
   revisar trade-offs con calma.
 -->

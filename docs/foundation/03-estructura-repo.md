@@ -54,7 +54,8 @@ Layout estándar de todo proyecto nuevo. Monorepo con workspaces nativos. El age
 ├── tsconfig.base.json
 ├── docker-compose.yml          # Postgres local + servicios de dev
 ├── .env.example                # TODAS las variables, documentadas, sin valores reales
-└── package.json                # Workspaces + scripts raíz
+├── pnpm-workspace.yaml         # Workspaces del monorepo (apps/*, packages/*)
+└── package.json                # Scripts raíz + campo packageManager (pnpm)
 ```
 
 ## Reglas de dependencia entre paquetes
@@ -103,7 +104,7 @@ Los sufijos por rol son críticos para el agente: `grep -r "\.repo\.ts"` localiz
 }
 ```
 
-Regla para el agente: **estos nombres nunca cambian entre proyectos.** `bun run check` y `bun run test` son el feedback loop universal; el agente no debe descubrir comandos, los conoce a priori.
+Regla para el agente: **estos nombres nunca cambian entre proyectos.** `pnpm check` y `pnpm test` son el feedback loop universal; el agente no debe descubrir comandos, los conoce a priori.
 
 ## README por módulo (opcional pero recomendado en módulos grandes)
 

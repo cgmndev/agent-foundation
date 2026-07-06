@@ -10,7 +10,7 @@ argument-hint: <slug>
 
 ## Pasos
 
-1. Localiza la feature (`specs/active/*-<slug>`) y lee spec/plan/tasks. Pide al usuario describir el cambio.
+1. Localiza la feature (`specs/active/*-<slug>`) y lee spec/plan/tasks; verifica `format` compatible (12-guia §2). Pide al usuario describir el cambio.
 2. Pregunta explícitamente, repasando la tabla de ACs con él: **¿el cambio altera algún AC?**
 
 **Rama A — NO altera ACs** (detalle de implementación, ajuste menor):

@@ -4,7 +4,7 @@
 //   - `db:migrate` only against local databases; remote-looking targets are
 //     pipeline territory (deploy job), never the agent.
 //
-// Sample payload: {"tool_name":"Bash","tool_input":{"command":"bun run db:push"}}
+// Sample payload: {"tool_name":"Bash","tool_input":{"command":"pnpm db:push"}}
 
 const PUSH = /\bdrizzle-kit\s+push\b|\bdb:push\b/;
 const MIGRATE = /\bdrizzle-kit\s+migrate\b|\bdb:migrate\b/;
@@ -21,7 +21,7 @@ export function check(input) {
       action: 'deny',
       reason:
         'guard-migrations: `drizzle-kit push` está prohibido (05-datos): genera migración versionada ' +
-        '(`bun run db:generate`) y aplícala (`bun run db:migrate`). Si de verdad es un prototipo local, ' +
+        '(`pnpm db:generate`) y aplícala (`pnpm db:migrate`). Si de verdad es un prototipo local, ' +
         'que lo ejecute el usuario en su terminal.',
     };
   }

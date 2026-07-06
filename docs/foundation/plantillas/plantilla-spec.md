@@ -1,5 +1,6 @@
 ---
 type: spec
+format: 1                # versión del formato del artefacto; los skills la verifican (12-guia §2)
 feature: <slug-kebab-case>
 status: draft            # draft | active | implemented | superseded
 version: 1.0

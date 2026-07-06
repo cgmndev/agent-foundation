@@ -13,7 +13,7 @@ Este repo ES dos cosas: la **suite de decisiones** (`docs/foundation/`) y el **h
 | Hooks (wiring de eventos) | `hooks/hooks.json` → `scripts/hooks/` | cabecera de cada script |
 | Guardias (una preocupación por archivo) | `scripts/guards/*.mjs` | cabecera-contrato de cada uno |
 | CLIs compartidos (hashing, trazabilidad AC→test) | `scripts/spec-hash.mjs` · `scripts/check-acs.mjs` | cabecera (uso) |
-| Batería de pruebas del harness | `scripts/test-harness.sh` | sí misma (40 aserciones) |
+| Batería de pruebas del harness | `scripts/test-harness.sh` | sí misma |
 | Agente revisor (review en contexto fresco) | `agents/revisor.md` | sí mismo |
 | Settings baseline para proyectos nuevos | `templates/settings.json` | `09-agentes.md` |
 | Specs de ESTE repo (self-hosted) | `specs/active/` · `specs/archive/` | `12-guia-specs.md` |
@@ -32,12 +32,13 @@ Qué se centraliza vs qué se copia: la **maquinaria** (skills/hooks/scripts/age
 
 - Probar cambios en vivo: `claude --plugin-dir .` (si tu versión no lo soporta: marketplace local + reinstalar).
 - Probar un guardia a mano: `echo '<payload-json>' | node scripts/hooks/pre-tool-use.mjs; echo $?` — hay payloads de ejemplo en la cabecera de cada guardia. Exit 2 = deny; JSON con `permissionDecision` = ask.
-- Batería completa de pruebas: `bash scripts/test-harness.sh` (40 aserciones contra un fixture temporal; correrla tras cualquier cambio en scripts/).
+- Batería completa de pruebas: `bash scripts/test-harness.sh` (fixture temporal; correrla tras cualquier cambio en scripts/ — el conteo PASS/FAIL sale al final).
 - Scripts: Node puro ≥20, **cero dependencias** (portabilidad), código en inglés, mensajes al usuario en español (04-convenciones §Idioma).
 - Todo cambio de comportamiento del harness = bump de `version` en `.claude-plugin/plugin.json` (SemVer). Si toca doctrina, actualizar también el doc de fundación correspondiente en el mismo cambio.
 
 ## Reglas de este repo
 
+- **Congelado en features:** hasta que un proyecto real atraviese el ciclo completo (`/new-spec` → `/close-spec`), solo entran fixes de fricción real de uso. La validación que descongela es el checkpoint C1-C6 (`docs/foundation/11-sistema-specs.md`).
 - `docs/foundation/` es la copia maestra que heredan todos los proyectos: se edita proponiendo diff al usuario, nunca de oficio.
 - Cambios grandes del harness o de la suite → spec en `specs/active/` (este repo se gestiona con su propio sistema).
 - Los hashes de specs los escribe SOLO `scripts/spec-hash.mjs` (vía skills). Los ADRs de este repo van en `docs/decisions/` cuando exista la primera desviación.

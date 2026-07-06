@@ -11,7 +11,7 @@ Contrato: `docs/foundation/12-guia-specs.md` §7 y §2 (hashing).
 ## Pasos
 
 1. Localiza `specs/active/*-<slug>` y lee `spec.md`.
-2. **Gates:** la sección "Preguntas abiertas" debe estar vacía y `status` debe ser `draft`. Si no, explica qué falta y para.
+2. **Gates:** `format` del artefacto compatible (12-guia §2 — si falta o es mayor al que conoces, para y dilo), la sección "Preguntas abiertas" vacía y `status: draft`. Si algo falla, explica qué y para.
 3. **Activa:** `status: active`, `updated:` hoy. Stampea el hash — única forma válida de escribir hashes:
    ```bash
    node "${CLAUDE_PLUGIN_ROOT:-.}/scripts/spec-hash.mjs" stamp specs/active/<carpeta> spec

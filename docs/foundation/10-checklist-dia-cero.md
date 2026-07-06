@@ -22,14 +22,14 @@ Secuencia ejecutable para iniciar un proyecto nuevo. Objetivo: repo productivo c
 ## Fase 1 — Scaffold del monorepo (medio día)
 
 - [ ] Estructura según [03-estructura-repo.md](03-estructura-repo.md): `apps/api`, `apps/web`, `packages/shared`, `packages/db`.
-- [ ] Raíz: `package.json` con workspaces + scripts estandarizados, `tsconfig.base.json` estricto ([04-convenciones-codigo.md](04-convenciones-codigo.md)), `biome.json`, `lefthook.yml` (pre-commit operativo, verificado con un commit de prueba), `.env.example`, `.gitignore`, `README.md`.
+- [ ] Raíz: `package.json` con scripts estandarizados + campo `packageManager` (pnpm), `pnpm-workspace.yaml`, `tsconfig.base.json` estricto ([04-convenciones-codigo.md](04-convenciones-codigo.md)), `biome.json`, `lefthook.yml` (pre-commit operativo, verificado con un commit de prueba), `.env.example`, `.gitignore`, `README.md`.
 - [ ] `docker-compose.yml` con Postgres (misma major que producción) + volumen.
 - [ ] `apps/api`: Hono + `@hono/node-server`, `core/` (config Zod fail-fast, logger pino, errors, db client Drizzle), `app.ts` con `secureHeaders`, error handler central, `/health` y `/ready`.
 - [ ] `packages/db`: schema inicial (tabla de prueba con columnas estándar), `drizzle.config.ts` (`dialect: 'postgresql'`), primera migración generada y aplicada.
 - [ ] `packages/shared`: primer schema Zod de contrato + export explícito.
-- [ ] `apps/web`: Vite + React + TanStack Router (file-based) + Query provider + Tailwind v4 + shadcn/ui inicializado (`components/ui/`) + cliente `hono/client` tipado; una ruta que consume el endpoint de prueba end-to-end.
+- [ ] `apps/web`: Vite + React + TanStack Router (file-based) + Query provider + Tailwind v4 + shadcn/ui inicializado (`components/ui/`) + cliente API tipado (`lib/api.ts`: fetch + validación con schemas/rutas de `shared`); una ruta que consume el endpoint de prueba end-to-end.
 - [ ] Testing operativo: Vitest configurado en api/web, Testcontainers con un test de integración real del módulo de prueba, Playwright con un smoke.
-- [ ] **Gate:** `bun run check && bun run test && bun run test:e2e` en verde. Este es el nacimiento del feedback loop; no avanzar sin él.
+- [ ] **Gate:** `pnpm check && pnpm test && pnpm test:e2e` en verde. Este es el nacimiento del feedback loop; no avanzar sin él.
 
 ## Fase 2 — Harness del agente (2-3 horas)
 
@@ -44,7 +44,7 @@ Secuencia ejecutable para iniciar un proyecto nuevo. Objetivo: repo productivo c
 
 - [ ] GitHub Actions: workflow de PR (install → check → test → build) bloqueante.
 - [ ] `infra/` con Terraform/OpenTofu desde el módulo base reutilizable: red mínima, Postgres gestionado, servicio contenedor, secrets, registry.
-- [ ] Dockerfile multi-stage (build con Bun, runtime `node:<LTS>-slim`, non-root) construyendo local OK.
+- [ ] Dockerfile multi-stage (build con pnpm/corepack, runtime `node:<LTS>-slim`, non-root) construyendo local OK.
 - [ ] Staging desplegado end-to-end desde `main` (imagen → migraciones → app → smoke E2E contra staging).
 - [ ] Secrets en Secrets Manager/Vault; ninguno en repo ni en CI en claro.
 - [ ] Sentry conectado (backend + frontend) con release por SHA.

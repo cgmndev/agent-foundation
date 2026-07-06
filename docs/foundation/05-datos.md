@@ -39,7 +39,7 @@ updatedAt: timestamp({ withTimezone: true }).notNull().defaultNow().$onUpdate(()
 
 ## Migraciones
 
-- **Flujo único:** editar schema TS → `bun run db:generate` → revisar el SQL generado (obligatorio, humano) → `bun run db:migrate`.
+- **Flujo único:** editar schema TS → `pnpm db:generate` → revisar el SQL generado (obligatorio, humano) → `pnpm db:migrate`.
 - Prohibido `drizzle-kit push` fuera de prototipos locales; todo cambio a entornos compartidos va por migración versionada y commiteada.
 - Migraciones son inmutables una vez en `main`: los arreglos son migraciones nuevas.
 - Migraciones destructivas (drop, alter con pérdida) requieren: ADR o nota en el spec + patrón expand-and-contract si hay datos en producción (añadir nuevo → backfill → cambiar lecturas → eliminar viejo).

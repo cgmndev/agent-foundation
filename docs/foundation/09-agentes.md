@@ -14,7 +14,7 @@ Cómo este paquete alimenta al agente sin inflar contexto. Complementa (no reemp
 
 1. **Smart zone:** mantener el contexto de trabajo <~100k tokens. Clear and reload sobre compact. Tareas descompuestas en vertical slices que quepan.
 2. **Progressive disclosure:** CLAUDE.md es corto y apunta; los documentos de este paquete se cargan bajo demanda según el tipo de tarea (tabla en [00-INDICE.md](00-INDICE.md)).
-3. **Guías vs sensores:** estos documentos son guías (feed-forward). Los sensores (feedback) son `bun run check`, `bun run test`, hooks y CI. Toda regla crítica debe existir como sensor, no solo como texto.
+3. **Guías vs sensores:** estos documentos son guías (feed-forward). Los sensores (feedback) son `pnpm check`, `pnpm test`, hooks y CI. Toda regla crítica debe existir como sensor, no solo como texto.
 4. **MCP mínimo:** 3-5 servers máximo por proyecto (Postgres local, GitHub y poco más); utilidades como CLIs/skills.
 
 ## Plantilla CLAUDE.md de proyecto
@@ -33,7 +33,7 @@ Presupuesto: <~150 líneas rellenada; lo que crezca se extrae a docs referenciad
 | verify-done | Stop/PostToolUse | Recuerda/verifica `check` + `test` al cerrar task |
 | protect-main | PreToolUse (Bash git) | Bloquea push directo y force-push a main |
 | archive-guard | PreToolUse (Read/Grep/Glob) | Bloquea usar `specs/archive/` como contexto espontáneo ([12-guia-specs.md](12-guia-specs.md) §8) |
-| drift-check | PreToolUse (Edit/Write en `apps/`, `packages/`) | Bloquea implementar con plan/tasks desfasados respecto a la spec (hashes) |
+| drift-check | PreToolUse (Edit/Write en `apps/`, `packages/`) | Señala (**ask**) implementación con plan/tasks desfasados (hashes); el humano decide si el cambio es ajeno a la spec |
 | session-brief | SessionStart | Inyecta orientación mínima al abrir sesión: mapa + specs activas + salud de hashes |
 
 (Implementación: plugin `agent-foundation` — en el repo de la fundación: `hooks/hooks.json` como wiring y `scripts/guards/` con un guardia por archivo. Los proyectos lo reciben instalando el plugin, no copiando archivos. Verdictos: deny para lo prohibido; **ask** para lo que requiere aprobación humana en el momento — guardrails como trust infrastructure.)
@@ -55,7 +55,7 @@ Llegan con el plugin `agent-foundation` (no se copian al repo); cada `SKILL.md` 
 1. Sesión limpia → cargar CLAUDE.md (automático) + doc(s) de fundación según tabla + spec/task activa.
 2. Plan mode para tasks no triviales; el plan referencia los AC-NN.
 3. Implementar el vertical slice completo (DB → API → frontend si aplica).
-4. `bun run check && bun run test` → commit convencional → siguiente task o cierre.
+4. `pnpm check && pnpm test` → commit convencional → siguiente task o cierre.
 5. Review SIEMPRE en sesión/contexto fresco (humano o sesión dedicada), nunca en la sesión implementadora — mecanizado con `/review-fresh` (agente `revisor`).
 6. Multi-task paralelo: git worktrees (2-3 máximo mientras el review sea el cuello de botella).
 

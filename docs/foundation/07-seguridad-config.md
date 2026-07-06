@@ -59,7 +59,7 @@ export const config = EnvSchema.parse(process.env);
 
 ## Dependencias y supply chain
 
-- `bun audit` (o `npm audit` en CI) como job informativo semanal; críticas bloquean release.
+- `pnpm audit` en CI como job informativo semanal; críticas bloquean release.
 - Renovate/Dependabot con PRs agrupadas mensuales ([04-convenciones-codigo.md](04-convenciones-codigo.md)).
 - Lockfile commiteado; instalación en CI con `--frozen-lockfile`.
 

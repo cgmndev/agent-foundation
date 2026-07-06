@@ -116,4 +116,4 @@ export class ConflictError extends AppError { /* status 409 */ }
 
 - Añadir una dependencia es una decisión, no un reflejo: preferir stdlib/plataforma; evaluar mantenimiento, tamaño y representación en training data.
 - El agente tiene prohibido añadir dependencias sin aprobación explícita (deny/ask rule del harness sobre edición de `package.json`).
-- Versiones pinneadas por lockfile (`bun.lock` commiteado); upgrades en PR dedicada mensual, nunca mezclados con features.
+- Versiones pinneadas por lockfile (`pnpm-lock.yaml` commiteado); upgrades en PR dedicada mensual, nunca mezclados con features.

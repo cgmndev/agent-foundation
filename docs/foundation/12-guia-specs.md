@@ -47,7 +47,7 @@ Cada artefacto lleva frontmatter (definido en cada plantilla). Los campos de enc
 - `plan.md` → `spec_hash`: copia del `source_hash` de la spec contra la que se escribió.
 - `tasks.md` → `plan_hash`: SHA-256 del plan contra el que se generó.
 
-**Detección de staleness (drift-check):** si `plan.spec_hash ≠ spec.source_hash` → el plan está desfasado y el agente debe negarse a implementar hasta regenerar/revisar el plan. Ídem para tasks vs plan. Cálculo del hash:
+**Detección de staleness (drift-check):** si `plan.spec_hash ≠ spec.source_hash` → el plan está desfasado y no es base válida para implementar ESA feature: se regenera/restampa antes de continuar con ella (el hook lo señala; ver §8). Ídem para tasks vs plan. Cálculo del hash:
 
 ```bash
 # El hash se calcula sobre el contenido SIN el frontmatter, para evitar
@@ -57,12 +57,14 @@ sed '1{/^---$/!q;};1,/^---$/d' spec.md | sha256sum | cut -d' ' -f1
 
 Los hashes los calculan y escriben los skills (`/activate-spec`, `/change-spec`); ni humano ni agente los computan a mano. Implementación canónica: `scripts/spec-hash.mjs` del plugin `agent-foundation` (el `sed` de arriba documenta la semántica).
 
+**Versionado del formato:** los tres artefactos llevan `format: 1` en el frontmatter. Los skills verifican el campo antes de operar: ante un `format` mayor del que conocen (proyecto más nuevo que el plugin instalado) o un artefacto sin el campo (pre-1), se detienen y lo dicen — nunca migran ni operan en silencio. Es la costura del corte plugin (lógica centralizada) ↔ snapshot (plantillas por proyecto).
+
 ## §3. Trazabilidad Acceptance Criteria → Tests
 
 Convención de tres partes:
 
 1. **En la spec:** cada criterio tiene ID estable `AC-NN` (dos o más dígitos) en la tabla de acceptance criteria. Los IDs nunca se reutilizan ni renumeran; si un AC se elimina en un bump de versión, su número muere con él.
-2. **En los tests** (Vitest, ejecutados con `bun run test` — nunca `bun test`): el ID aparece literal en el nombre del test o del describe block:
+2. **En los tests** (Vitest, `pnpm test`): el ID aparece literal en el nombre del test o del describe block:
 
 ```typescript
 describe("AC-01: el usuario puede exportar el reporte en PDF", () => {
@@ -182,7 +184,7 @@ fi
 
 Notas: cubre la lectura *espontánea* del agente (Read/Grep/Glob); `cat` vía Bash lo bypasea y es aceptable — el hook protege contra contaminación accidental de contexto, no es adversarial (guardrails como trust infrastructure). Si tú pides revisar una spec histórica, se lee y se comunica.
 
-**drift-check** — PreToolUse sobre Edit/Write en `apps/` y `packages/`: si existe una feature activa y `plan.spec_hash ≠ spec.source_hash` (o `tasks.plan_hash ≠ hash(plan)`), bloquear con "Plan desfasado respecto a spec vX — regenerar antes de implementar".
+**drift-check** — PreToolUse sobre Edit/Write en `apps/` y `packages/`: si alguna feature activa tiene `plan.spec_hash ≠ spec.source_hash` (o `tasks.plan_hash ≠ hash(plan)`), pide confirmación (**ask**) señalando la spec desfasada. Si el cambio pertenece a esa spec: detenerse y regenerar (`/change-spec`); si es trabajo ajeno (hotfix, cambio sin spec de los umbrales de la Decisión 6, otra spec sana): continuar y arreglar el drift aparte. Deny se descartó a propósito: sin ownership verificable del path editado, bloquearía trabajo ajeno y entrenaría el hábito de bypass. Escalación futura (solo con evidencia de fricción real): scoping por la "Superficie de cambio" declarada del plan.
 
 Implementación: `scripts/guards/archive-guard.mjs` y `scripts/guards/drift-check.mjs` del plugin, despachados por `scripts/hooks/pre-tool-use.mjs`. Inventario completo de hooks del proyecto (incluye los de stack): [09-agentes.md](09-agentes.md).
 

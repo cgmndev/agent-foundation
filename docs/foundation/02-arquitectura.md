@@ -1,6 +1,6 @@
 ---
 doc: arquitectura
-version: 1.1
+version: 1.2
 fecha: 2026-07-06
 estado: vigente
 tipo: capa-durable
@@ -56,6 +56,7 @@ La forma del boundary HTTP es parte de la arquitectura: idéntica en todos los p
 - **Status:** 200 lectura/actualización, 201 creación, 204 borrado sin body; el resto lo mapea `AppError.status`.
 - **Versionado:** sin prefijo `/v1` por defecto (consumidor único: el frontend del monorepo, desplegado en sincronía). OpenAPI (`@hono/zod-openapi`) + versionado explícito solo cuando aparezcan consumidores externos (ADR).
 - **Webhooks/jobs entrantes:** handlers idempotentes por diseño (los reintentos del proveedor son la norma) y verificación de firma antes de parsear.
+- **Rutas como artefacto:** cada entidad expone sus rutas como constantes/builders junto a sus schemas en `packages/shared`; el frontend nunca construye URLs a mano ([01-stack.md](01-stack.md) §Cliente API).
 
 ## Qué NO hacer (anti-patrones con nombre)
 
@@ -80,7 +81,7 @@ apps/web/src/
 │   ├── hooks/         # useQuery/useMutation de la feature
 │   └── store.ts       # Zustand SOLO si hay estado de cliente real
 ├── components/ui/     # Design system compartido (botones, inputs...)
-└── lib/               # Cliente API (hono/client), config Query
+└── lib/               # Cliente API (fetch tipado + schemas/rutas de shared), config Query
 ```
 
 - Las rutas son delgadas: componen features, no contienen lógica.

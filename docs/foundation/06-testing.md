@@ -34,9 +34,9 @@ El testing tiene aquí doble función: red de seguridad del producto y **feedbac
 
 ## El loop del agente (workflow obligatorio)
 
-1. Al tomar una task: correr `bun run test -- <modulo>` para línea base verde.
+1. Al tomar una task: correr `pnpm test -- <modulo>` para línea base verde.
 2. TDD cuando la conducta es clara desde el spec: red → green → refactor. Los criterios de aceptación (AC-NN) del spec se mapean 1:1 a tests con el ID en el nombre (convención en [12-guia-specs.md](12-guia-specs.md) §3).
-3. Cierre de task: `bun run check && bun run test` completos. Una task no está "done" con tests rojos o tipos rotos — sin excepciones, y el hook del harness lo verifica.
+3. Cierre de task: `pnpm check && pnpm test` completos. Una task no está "done" con tests rojos o tipos rotos — sin excepciones, y el hook del harness lo verifica.
 4. **Review de tests en contexto fresco:** los tests generados por el agente los revisa un humano (o una sesión de review separada) contra el spec, nunca la misma sesión que los escribió. Foco: ¿el test verifica el requisito o la implementación?
 
 ## E2E smoke (Playwright)

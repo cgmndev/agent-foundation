@@ -1,6 +1,6 @@
 ---
 doc: devops
-version: 1.1
+version: 1.2
 fecha: 2026-07-06
 estado: vigente
 tipo: capa-durable
@@ -23,7 +23,7 @@ Pipeline y operación estándar. Objetivo: deploy aburrido, reproducible y con e
 
 ## Build y contenedor
 
-- **Docker multi-stage:** stage 1 con Bun (`oven/bun`) para `bun install --frozen-lockfile` + build; stage final `node:<LTS>-slim` que solo copia `dist/` + `node_modules` de producción. Usuario non-root, `NODE_ENV=production`.
+- **Docker multi-stage:** ambas stages sobre `node:<LTS>-slim` (una sola familia de imagen). Stage de build: `corepack enable` + `pnpm install --frozen-lockfile` + build; stage final copia `dist/` + dependencias de producción del workspace desplegado (`pnpm deploy --prod`). Usuario non-root, `NODE_ENV=production`.
 - El frontend se sirve como estáticos (S3+CloudFront / OCI Object Storage+CDN) o desde el propio contenedor vía Hono `serveStatic` en proyectos pequeños — decisión por proyecto, default: estáticos en CDN.
 - Imagen etiquetada con SHA de commit; `latest` no existe en producción.
 - Healthcheck: endpoint `GET /health` (liveness: proceso vivo) y `GET /ready` (readiness: DB alcanzable) desde el día uno.

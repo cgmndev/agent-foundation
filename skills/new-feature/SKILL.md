@@ -17,7 +17,7 @@ Filosofía y reglas: `docs/foundation/02-arquitectura.md` §Frontend. Requiere `
 apps/web/src/features/<n>/
 ├── index.ts               # Exporta SOLO lo que las rutas consumen
 ├── components/<n>-view.tsx
-└── hooks/use-<n>.ts       # useQuery/useMutation contra el cliente hono tipado
+└── hooks/use-<n>.ts       # useQuery/useMutation vía el cliente API tipado (lib/api) tipado
 ```
 
 3. Stubs de referencia:
@@ -46,4 +46,4 @@ import { useQuery } from '@tanstack/react-query';
    - Una feature no importa internals de otra feature: solo vía su `index.ts`.
    - Formularios: react-hook-form + resolver Zod con el schema de `packages/shared` (01-stack §Formularios).
 5. Ruta: las rutas (`src/routes/`) son delgadas — componen la feature vía su `index.ts`; el loader hace prefetch vía Query.
-6. Cierre: `bun run check` en verde.
+6. Cierre: `pnpm check` en verde.

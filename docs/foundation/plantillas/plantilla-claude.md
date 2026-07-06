@@ -15,16 +15,15 @@ proyecto y ajustar los <>. Presupuesto: <~150 líneas rellenada. Las secciones
 <Una frase: qué es y para quién.>
 
 ## Stack
-TypeScript estricto · Node LTS (runtime) + Bun (package manager/tasks) · Hono ·
+TypeScript estricto · Node LTS + pnpm · Hono ·
 React + TanStack Router/Query · Zustand (solo client state) · Tailwind v4 + shadcn/ui ·
 react-hook-form + Zod v4 · Drizzle + PostgreSQL · Vitest + Testcontainers · Biome.
 Decisiones y justificación: docs/foundation/01-stack.md
 
 ## Comandos (nunca cambian)
-- bun run dev / build / test / test:e2e / check
-- bun run db:generate / db:migrate / db:seed / db:studio
-- `bun run test` ejecuta Vitest sobre Node. NUNCA `bun test` (runner equivocado).
-Cierre de toda task: `bun run check && bun run test` en verde. Sin verde no hay done.
+- pnpm dev / build / test / test:e2e / check
+- pnpm db:generate / db:migrate / db:seed / db:studio
+Cierre de toda task: `pnpm check && pnpm test` en verde. Sin verde no hay done.
 
 ## Arquitectura (resumen operativo)
 Monolito modular en vertical slices. Módulo = apps/api/src/modules/<x> con
@@ -40,7 +39,6 @@ Detalle y anti-patrones: docs/foundation/02-arquitectura.md
 - Sin `any`, sin `console.log`, sin dependencias nuevas sin aprobación.
 - Todo input externo se valida con Zod en el boundary.
 - Errores: lanzar AppError con code estable; el handler central los traduce.
-- Nada de Bun.* APIs en código de aplicación (portabilidad Node).
 - Import Drizzle SIEMPRE de drizzle-orm/pg-core; config dialect: 'postgresql'.
 - timestamptz siempre; migraciones inmutables; jamás drizzle-kit push fuera de local.
 - Código en inglés; specs y dominio en español (docs/foundation/04, sección Idioma).

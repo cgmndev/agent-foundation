@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // Stop guard "verify-done" (09-agentes, tabla de hooks): si hay archivos
-// TS/TSX modificados posteriores a la última corrida de `bun run check|test`
+// TS/TSX modificados posteriores a la última corrida de `pnpm check|test`
 // (marcador en .git/, escrito por post-tool-use.mjs), bloquea el cierre UNA
 // vez e instruye cerrar el feedback loop. stop_hook_active corta el bucle.
 // Limitación conocida: el marcador prueba que el loop CORRIÓ, no que quedó
@@ -55,6 +55,6 @@ if (newest <= markerTime) process.exit(0);
 
 process.stderr.write(
   `verify-done: ${changed.length} archivo(s) TS modificados sin pasar el feedback loop. ` +
-    'Ejecuta `bun run check && bun run test` y deja todo verde antes de cerrar (06-testing). Sin verde no hay done.',
+    'Ejecuta `pnpm check && pnpm test` y deja todo verde antes de cerrar (06-testing). Sin verde no hay done.',
 );
 process.exit(2);

@@ -1,5 +1,6 @@
 ---
 type: tasks
+format: 1                # versión del formato del artefacto; los skills la verifican (12-guia §2)
 feature: <slug-kebab-case>
 status: active           # active | done
 created: AAAA-MM-DD
@@ -35,8 +36,8 @@ REGLAS:
 
 ## Fase N — Cierre
 
-- [ ] TN.1 — Suite completa verde (`bun run test`)
-- [ ] TN.2 — `bun run check` limpio (Biome + tsc)
+- [ ] TN.1 — Suite completa verde (`pnpm test`)
+- [ ] TN.2 — `pnpm check` limpio (Biome + tsc)
 - [ ] TN.3 — Diff revisado contra "Superficie de cambio" del plan
 - [ ] TN.4 — Ejecutar `/close-spec`
 

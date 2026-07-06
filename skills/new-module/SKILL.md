@@ -68,4 +68,4 @@ describe('<n>', () => {
 
 4. Monta el módulo en `apps/api/src/app.ts`: `app.route('/<n>', <n>Routes)` (ruta plural kebab-case, contrato en 02 §Contrato API).
 5. Reglas duras a respetar: schemas de contrato en `packages/shared` (no en el módulo); sin `any`; imports de otros módulos SOLO vía su `index.ts`; escrituras multi-tabla = transacción.
-6. Cierre: `bun run check && bun run test` en verde antes de dar el módulo por creado.
+6. Cierre: `pnpm check && pnpm test` en verde antes de dar el módulo por creado.

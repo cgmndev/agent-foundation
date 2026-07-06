@@ -1,6 +1,6 @@
 ---
 doc: stack
-version: 1.1
+version: 1.3
 fecha: 2026-07-06
 estado: vigente
 tipo: capa-durable
@@ -16,7 +16,7 @@ Decisiones cerradas. Formato por componente: **Decisión → Justificación → 
 |---|---|---|
 | Lenguaje | TypeScript estricto end-to-end | 5.x, `strict: true` |
 | Runtime producción | **Node LTS** (22/24) | LTS activa |
-| Toolchain dev | **Bun** (package manager + task runner) | 1.3.x |
+| Package manager / tasks | **pnpm** (campo `packageManager`) | 10.x |
 | HTTP framework | **Hono** | 4.x |
 | Frontend | React + **TanStack Router** (cliente) + **TanStack Query** | estables |
 | Estado cliente | **Zustand** | 5.x |
@@ -29,29 +29,29 @@ Decisiones cerradas. Formato por componente: **Decisión → Justificación → 
 | Testing | **Vitest** + Testcontainers + Playwright (smoke) | estables |
 | Lint/format | **Biome** (+ `tsc --noEmit` como gate de tipos) | 2.x |
 | Logging | **pino** (JSON estructurado) | estable |
-| Monorepo | Workspaces nativos (sin Turborepo inicial) | — |
+| Monorepo | Workspaces de pnpm (sin Turborepo inicial) | — |
 | Módulos JS | ESM only (`"type": "module"`) | — |
 | Build backend | **tsx** (dev) + **tsup** (bundle prod) | estables |
 
-## Runtime: Node en producción, Bun como toolchain
+## Runtime y toolchain: Node LTS + pnpm
 
-**Decisión.** Node LTS es el runtime de ejecución en desarrollo y producción (paridad total). Bun se conserva como package manager (`bun install`) y task runner (`bun run`) por velocidad de DX y CI. No se usa ninguna API `Bun.*` en código de aplicación.
+**Decisión.** Node LTS (22/24) es el único runtime, en desarrollo y producción. **pnpm** es el package manager y task runner (`pnpm <script>`), fijado con el campo `packageManager` del package.json raíz (vía Corepack mientras la LTS lo incluya; en CI, la action de setup lee ese campo). Bun sale del stack — reversión documentada en el umbral.
 
-**Justificación.** La compatibilidad es el criterio dominante para software de clientes: native addons, observabilidad (APM/OTel), soporte de proveedores cloud (AWS/OCI) y madurez operativa siguen del lado de Node. Node 22/24 ya absorbió los principales DX wins de Bun (TS type stripping para scripts, test runner, watch mode, `--env-file`), reduciendo el costo de renunciar a Bun como runtime. El patrón híbrido es la recomendación práctica del trimestre y elimina el riesgo sin perder la velocidad de instalación (20-40x) donde más se nota: CI.
+**Justificación.** La compatibilidad sigue siendo el criterio dominante para software de clientes (native addons, APM/OTel, soporte cloud). El híbrido anterior (Bun como instalador/lanzador sobre runtime Node) quedó reducido a usar solo el instalador, al precio de varias reglas de contención — incluida la trampa `bun test` vs el script de Vitest — y un Docker de doble base. pnpm elimina la dualidad y conserva la ventaja donde importaba: su store global con hard links hace los installs casi instantáneos en worktrees paralelos (el escenario de sesiones de agente concurrentes). Y añade lo que Bun no da: **estrictez sin phantom dependencies** — un import no declarado en package.json falla ruidosamente en vez de funcionar por hoisting accidental (veredicto binario, principio de enforcement). Workspaces maduros y masivamente representados en training data.
 
 **Reglas.**
-- Código portable entre runtimes: drivers de ecosistema siempre (`pg`/`postgres.js` vía Drizzle), nunca `Bun.SQL`, `Bun.serve` ni `Bun.file`.
-- Tests corren sobre Node (Vitest), porque los tests deben ejecutarse en el runtime que se despliega.
-- Dockerfile con base `node:<LTS>-slim`; Bun solo aparece en la stage de build para instalar dependencias.
-- Scripts utilitarios pueden ejecutarse con `node --experimental-strip-types` o `tsx`; no introducir un tercer runner.
+- `pnpm <script>` es la forma canónica: `pnpm check`, `pnpm test`, `pnpm db:generate`… Los nombres estandarizados de [03-estructura-repo.md](03-estructura-repo.md) no cambian.
+- Lockfile `pnpm-lock.yaml` commiteado; CI y Docker instalan con `--frozen-lockfile`.
+- Workspaces declarados en `pnpm-workspace.yaml`; dependencias internas con protocolo `workspace:*`.
+- Los tests corren en el runtime que se despliega (Node); no introducir runtimes ni runners alternativos. Scripts utilitarios: `tsx` o `node --experimental-strip-types`.
 
-**Umbral de revisión.** Reconsiderar Bun como runtime único si: (a) la suite completa pasa 100% en Bun, (b) no hay native addons incompatibles, (c) el APM elegido soporta Bun oficialmente.
+**Umbral de revisión (reversión de Bun, 2026-07).** Bun se retiró porque el híbrido pagaba dualidad estructural (reglas de contención + trampa `bun test` + Docker de dos bases) para aprovechar solo su instalador, y pnpm cubre la mayor parte de esa ventaja sin runtime dual. Reconsiderar Bun — como runtime+PM completo, no como híbrido — si: (a) los installs se vuelven cuello real en CI/worktrees (>1-2 min con caché), o (b) el ecosistema agéntico consolida tooling Bun-first (Bun pertenece a Anthropic desde dic-2025 y Claude Code corre sobre él), y además (c) la suite pasa 100% en Bun y (d) el APM elegido lo soporta oficialmente.
 
 ## HTTP framework: Hono
 
 **Decisión.** Hono sobre `@hono/node-server`, con `@hono/zod-validator` en cada endpoint y export OpenAPI (`@hono/zod-openapi`) cuando haya consumidores externos.
 
-**Justificación.** TypeScript-native, API mínima y greppable (agent-friendly), Zod como ciudadano de primera clase, portable entre runtimes (protege la opción Bun futura) y con RPC client (`hono/client`) que da type safety end-to-end dentro del monorepo sin acoplarse a un framework de RPC propietario. Fastify queda como alternativa documentada si un proyecto exige su ecosistema de plugins; Express se descarta para proyectos nuevos.
+**Justificación.** TypeScript-native, API mínima y greppable (agent-friendly), Zod como ciudadano de primera clase y portable entre runtimes (mantiene abierta la opción Bun del umbral de Runtime). El RPC client (`hono/client`) NO se adopta — decisión propia abajo (§Cliente API). Fastify queda como alternativa documentada si un proyecto exige su ecosistema de plugins; Express se descarta para proyectos nuevos.
 
 **Reglas.**
 - Todo input externo (body, params, query, headers relevantes) se valida con Zod en el boundary del endpoint. Sin excepciones.
@@ -59,6 +59,20 @@ Decisiones cerradas. Formato por componente: **Decisión → Justificación → 
 - Sin middlewares mágicos propios: preferir composición explícita visible en el archivo de la ruta.
 
 **Umbral de revisión.** Si un proyecto necesita streaming complejo, plugins maduros (multipart avanzado, rate limiting sofisticado) y Hono obliga a reinventar: evaluar Fastify vía ADR.
+
+## Cliente API: fetch tipado delgado (sin RPC)
+
+**Decisión.** El frontend consume la API con un helper fetch propio (~30 líneas, `apps/web/src/lib/api.ts`) que recibe la ruta y el schema Zod de respuesta y valida en runtime (`safeParse`). El contrato canónico vive en `packages/shared`: por entidad, schemas de request/response + sus rutas como constantes/builders (`orderRoutes.detail(id)` → `/orders/${id}`). No se adopta `hono/client` (RPC por inferencia) ni ts-rest/equivalentes.
+
+**Justificación.** (a) *Fuente de verdad única:* con RPC, los tipos inferidos del server compiten con los schemas de `shared` como contrato — y divergen justo donde importa: el envelope de error `{ error: { code } }` sale del handler central (la inferencia no lo cubre) y la inferencia no valida la respuesta real en runtime; si el server miente, el tipo no salva. (b) *El feedback loop es el activo crítico:* las cadenas de inferencia de `AppType` degradan `tsc --noEmit` de forma no lineal al crecer la API, y la mitigación oficial (precompilar los tipos del server a `.d.ts`) reintroduce exactamente el paso de generación que este stack eliminó por diseño. (c) *Agent-friendliness:* cuando la inferencia se rompe, el error es un muro de tipos condicionales ilegible — la misma clase de type-level programming que [04-convenciones-codigo.md](04-convenciones-codigo.md) prohíbe escribir a mano, y el mismo problema ya señalado con los `.d.ts` de TanStack Router; el contrato inferido no es greppable, y `fetch` + schema explícito es el patrón dominante en training data.
+
+**Reglas.**
+- El contrato de cada entidad es UN artefacto legible en `packages/shared` (schemas + rutas). "¿Qué devuelve `GET /orders`?" se responde leyendo un archivo, no trazando tipos.
+- El frontend jamás construye URLs a mano: siempre los builders de `shared`. Renombrar una ruta = un solo punto de edición.
+- El helper valida toda respuesta con el schema y traduce el envelope de error a un error tipado de cliente.
+- La deriva ruta↔server que el RPC detectaba en compile time la cubren los tests de integración del módulo y el smoke E2E, ya obligatorios ([06-testing.md](06-testing.md)).
+
+**Umbral de revisión.** Consumidores externos múltiples o SDK público → OpenAPI (`@hono/zod-openapi`) + cliente generado, vía ADR. Re-evaluar RPC solo si Hono ofreciera inferencia con tipos planos y validación runtime (descartado 2026-07: coherencia de fuente única + coste de inferencia sobre el check).
 
 ## Frontend: React + TanStack Router + TanStack Query + Zustand
 
@@ -137,7 +151,7 @@ Decisiones cerradas. Formato por componente: **Decisión → Justificación → 
 
 **Reglas.**
 - Config de Biome compartida en la raíz; los proyectos no la sobreescriben.
-- El agente ejecuta `bun run check` (Biome + tsc) como paso final de toda tarea; en el harness, un hook PostToolUse puede automatizarlo.
+- El agente ejecuta `pnpm check` (Biome + tsc) como paso final de toda tarea; en el harness, un hook PostToolUse puede automatizarlo.
 - Excepción documentada: si un cliente impone ESLint, se adopta flat config con typescript-eslint y se registra ADR.
 
 ## Build y ejecución (monorepo TS)
@@ -147,7 +161,7 @@ Decisiones cerradas. Formato por componente: **Decisión → Justificación → 
 **Justificación.** Cero pasos de generación intermedios = cero estados desincronizados que el agente pueda olvidar regenerar (el mismo principio por el que Drizzle ganó a Prisma). El `moduleResolution: bundler` del tsconfig ([04-convenciones-codigo.md](04-convenciones-codigo.md)) exige exactamente este modelo. tsx y tsup son boring, ubicuos y casi sin config.
 
 **Reglas.**
-- Ningún paquete interno tiene script de build; si un cambio en `shared` rompe `api`, lo detecta el `tsc --noEmit` de `bun run check`, no un paso de compilación.
+- Ningún paquete interno tiene script de build; si un cambio en `shared` rompe `api`, lo detecta el `tsc --noEmit` de `pnpm check`, no un paso de compilación.
 - El bundle de producción incluye solo código propio + paquetes workspace; las dependencias externas van instaladas en la imagen (stage de producción del Dockerfile, [08-devops.md](08-devops.md)).
 - `engines.node` fijado a la LTS elegida; misma versión en Dockerfile y CI.
 
@@ -162,7 +176,7 @@ Decisiones cerradas. Formato por componente: **Decisión → Justificación → 
 ## Qué queda explícitamente fuera del stack default
 
 - **Microservicios / colas distribuidas de entrada.** Monolito modular ([02-arquitectura.md](02-arquitectura.md)). Un job runner in-process o `pg`-based (p. ej. pg-boss) cubre background jobs hasta que la escala demuestre lo contrario.
-- **GraphQL.** REST + RPC tipado de Hono cubre los casos; GraphQL solo si el cliente lo exige (ADR).
+- **GraphQL.** REST + contrato tipado en `shared` (schemas + rutas) cubre los casos; GraphQL solo si el cliente lo exige (ADR).
 - **Redis de entrada.** Postgres cubre cache ligera, jobs y locks al inicio (`UNLOGGED` tables, advisory locks). Redis entra cuando haya evidencia de necesidad.
 - **Turborepo/Nx de entrada.** Workspaces + scripts hasta que el build supere ~2-3 min o haya >4 paquetes con grafo real de dependencias.
 - **i18n.** Una sola lengua por proyecto como default (la del cliente); librería de i18n solo si el proyecto lo exige (ADR).
