@@ -17,7 +17,7 @@ Este repo ES dos cosas: la **suite de decisiones** (`docs/foundation/`) y el **h
 | Agente revisor (review en contexto fresco) | `agents/revisor.md` | sí mismo |
 | Settings baseline para proyectos nuevos | `templates/settings.json` | `09-agentes.md` |
 | Specs de ESTE repo (self-hosted) | `specs/active/` · `specs/archive/` | `12-guia-specs.md` |
-| Continuidad entre sesiones/máquinas (contexto no versionado) | `HANDOFF.md` | sí mismo |
+| Pendientes y roadmap del repo | `ROADMAP.md` | sí mismo |
 
 Regla de documentación: **la implementación se autodocumenta** (frontmatter de skills, cabeceras-contrato de scripts); este archivo solo mapea. No crear manuales paralelos que dupliquen contenido.
 
@@ -44,4 +44,4 @@ Qué se centraliza vs qué se copia: la **maquinaria** (skills/hooks/scripts/age
 - Cambios grandes del harness o de la suite → spec en `specs/active/` (este repo se gestiona con su propio sistema).
 - Los hashes de specs los escribe SOLO `scripts/spec-hash.mjs` (vía skills). Los ADRs de este repo van en `docs/decisions/` cuando exista la primera desviación.
 - Si un skill muestra `${CLAUDE_PLUGIN_ROOT}` sin expandir: es la raíz de la instalación del plugin; dentro de este repo equivale a `.`.
-- Si tu memoria de proyecto está vacía (carpeta renombrada, máquina nueva): reconstrúyela desde `HANDOFF.md` antes de trabajar.
+- Si tu memoria de proyecto está vacía (carpeta renombrada, máquina nueva): reconstrúyela desde este `CLAUDE.md` + `docs/foundation/` + `git log`; los pendientes están en `ROADMAP.md`.
