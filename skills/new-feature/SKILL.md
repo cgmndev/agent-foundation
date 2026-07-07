@@ -45,5 +45,5 @@ import { useQuery } from '@tanstack/react-query';
    - **NO crees `store.ts`** por defecto: Zustand solo si aparece estado de cliente genuino (UI, wizard) — y nunca datos de servidor.
    - Una feature no importa internals de otra feature: solo vía su `index.ts`.
    - Formularios: react-hook-form + resolver Zod con el schema de `packages/shared` (01-stack §Formularios).
-5. Ruta: las rutas (`src/routes/`) son delgadas — componen la feature vía su `index.ts`; el loader hace prefetch vía Query.
+5. Ruta: las rutas (`src/routes/`) son delgadas — componen la feature vía su `index.ts`; el loader hace prefetch vía Query. (El scaffold de la feature es idéntico en modo SSR y SPA; solo cambia el archivo de ruta. En SSR el loader corre en server — datos siempre vía el cliente tipado a Hono, nunca server functions: 01-stack §Cliente API.)
 6. Cierre: `pnpm check` en verde.

@@ -16,7 +16,7 @@ proyecto y ajustar los <>. Presupuesto: <~150 líneas rellenada. Las secciones
 
 ## Stack
 TypeScript estricto · Node LTS + pnpm · Hono ·
-React + TanStack Router/Query · Zustand (solo client state) · Tailwind v4 + shadcn/ui ·
+React + TanStack Start (SSR/SPA) + Query · Zustand (solo client state) · Tailwind v4 + shadcn/ui ·
 react-hook-form + Zod v4 · Drizzle + PostgreSQL · Vitest + Testcontainers · Biome.
 Decisiones y justificación: docs/foundation/01-stack.md
 

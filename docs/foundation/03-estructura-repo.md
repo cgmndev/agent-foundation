@@ -23,7 +23,7 @@ Layout estándar de todo proyecto nuevo. Monorepo con workspaces nativos. El age
 │   │   │   └── main.ts         # Entry point (server, señales, graceful shutdown)
 │   │   ├── drizzle/            # Migraciones generadas
 │   │   └── package.json
-│   └── web/                    # Frontend React + TanStack Router
+│   └── web/                    # Frontend React + TanStack Start (SSR/SPA)
 │       ├── src/                # (layout en 02-arquitectura.md)
 │       └── package.json
 ├── packages/

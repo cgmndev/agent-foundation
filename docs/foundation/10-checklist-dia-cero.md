@@ -27,7 +27,7 @@ Secuencia ejecutable para iniciar un proyecto nuevo. Objetivo: repo productivo c
 - [ ] `apps/api`: Hono + `@hono/node-server`, `core/` (config Zod fail-fast, logger pino, errors, db client Drizzle), `app.ts` con `secureHeaders`, error handler central, `/health` y `/ready`.
 - [ ] `packages/db`: schema inicial (tabla de prueba con columnas estándar), `drizzle.config.ts` (`dialect: 'postgresql'`), primera migración generada y aplicada.
 - [ ] `packages/shared`: primer schema Zod de contrato + export explícito.
-- [ ] `apps/web`: Vite + React + TanStack Router (file-based) + Query provider + Tailwind v4 + shadcn/ui inicializado (`components/ui/`) + cliente API tipado (`lib/api.ts`: fetch + validación con schemas/rutas de `shared`); una ruta que consume el endpoint de prueba end-to-end.
+- [ ] `apps/web`: TanStack Start (v1.0+, modo SSR o SPA por proyecto) + React + Query provider + Tailwind v4 + shadcn/ui inicializado (`components/ui/`) + cliente API tipado (`lib/api.ts`: fetch + validación con schemas/rutas de `shared`, base URL isomórfica para SSR); una ruta que consume el endpoint de prueba end-to-end. Sin server functions para datos de dominio.
 - [ ] Testing operativo: Vitest configurado en api/web, Testcontainers con un test de integración real del módulo de prueba, Playwright con un smoke.
 - [ ] **Gate:** `pnpm check && pnpm test && pnpm test:e2e` en verde. Este es el nacimiento del feedback loop; no avanzar sin él.
 

@@ -1,6 +1,6 @@
 ---
 doc: stack
-version: 1.3
+version: 1.4
 fecha: 2026-07-06
 estado: vigente
 tipo: capa-durable
@@ -18,7 +18,7 @@ Decisiones cerradas. Formato por componente: **Decisión → Justificación → 
 | Runtime producción | **Node LTS** (22/24) | LTS activa |
 | Package manager / tasks | **pnpm** (campo `packageManager`) | 10.x |
 | HTTP framework | **Hono** | 4.x |
-| Frontend | React + **TanStack Router** (cliente) + **TanStack Query** | estables |
+| Frontend | React + **TanStack Start** (SSR o SPA por proyecto) + **TanStack Query** | v1.0+ |
 | Estado cliente | **Zustand** | 5.x |
 | Estilos / UI kit | **Tailwind CSS v4** + **shadcn/ui** | estables |
 | Formularios | **react-hook-form** + resolver Zod | estables |
@@ -71,22 +71,26 @@ Decisiones cerradas. Formato por componente: **Decisión → Justificación → 
 - El frontend jamás construye URLs a mano: siempre los builders de `shared`. Renombrar una ruta = un solo punto de edición.
 - El helper valida toda respuesta con el schema y traduce el envelope de error a un error tipado de cliente.
 - La deriva ruta↔server que el RPC detectaba en compile time la cubren los tests de integración del módulo y el smoke E2E, ya obligatorios ([06-testing.md](06-testing.md)).
+- Esta decisión se extiende a las **server functions** de TanStack Start (`createServerFn`): son RPC por inferencia y **no se usan para datos de dominio** — el data path es siempre el fetch tipado + contrato de `shared`, en cliente y en loaders SSR (ver §Frontend). Reservadas, si acaso, para ocultar un secreto de terceros server-side.
 
 **Umbral de revisión.** Consumidores externos múltiples o SDK público → OpenAPI (`@hono/zod-openapi`) + cliente generado, vía ADR. Re-evaluar RPC solo si Hono ofreciera inferencia con tipos planos y validación runtime (descartado 2026-07: coherencia de fuente única + coste de inferencia sobre el check).
 
-## Frontend: React + TanStack Router + TanStack Query + Zustand
+## Frontend: React + TanStack Start + TanStack Query + Zustand
 
-**Decisión.** SPA con TanStack Router (file-based routing, cliente). TanStack Query para todo estado de servidor. Zustand solo para estado de cliente genuino (UI, preferencias, wizards). TanStack Start NO se adopta todavía.
+**Decisión.** **TanStack Start (v1.0+)** como framework de frontend único, en dos modos según proyecto: **SSR** (default cuando hay superficie pública, SEO o first-paint que importe) o **SPA** (`spa: { enabled: true }`, deploy estático a CDN sin servidor) para herramientas internas sin SEO. Start está construido sobre TanStack Router (mismo file-based routing): no es un segundo stack, es un modelo de rutas en dos modos. TanStack Query para todo estado de servidor; Zustand solo para estado de cliente genuino (UI, preferencias, wizards). **Los datos siempre viajan por el fetch tipado a la API Hono (§Cliente API); las server functions de Start NO se usan para datos de dominio.**
 
-**Justificación.** Router (cliente) es la pieza madura del ecosistema TanStack; Start sigue en Release Candidate y con RSC pendiente — riesgo innecesario para proyectos de clientes. La separación Query/Zustand elimina la ambigüedad número uno que degrada el código de agentes en frontend: duplicar estado de servidor en stores.
+**Justificación.** Start llegó a v1.0 estable (mar-2026) con SSR y streaming en GA; el modo SPA es una configuración soportada que deploya 100% estático (shell prerenderizado + CDN). Unificar en un solo framework elimina el coste de "dos modelos mentales" —el que más degrada el código de agentes en frontend— y, como Start es Router por debajo, un proyecto puede activar SSR por-ruta sin migración. RSC es opt-in y experimental (abr-2026) y ortogonal a la necesidad real, que es SSR, no RSC: se ignora hasta que deje de ser experimental. La separación Query/Zustand elimina la ambigüedad número uno del frontend agéntico: duplicar estado de servidor en stores. (Evolución 2026-07: revierte el "TanStack Start no se adopta todavía" de v1.2–1.3, cuando Start estaba en RC; el umbral de adopción que fijaba ese doc —v1.0 + SSR real— se cumplió, con 3 de los 5 próximos proyectos exigiendo SSR.)
 
 **Reglas.**
-- **Prohibido** guardar datos de servidor en Zustand. Si viene de la API, vive en TanStack Query (cache, invalidación, loaders del Router).
-- Stores de Zustand pequeños y por dominio de UI, con selectores; nunca un store global monolítico.
-- Loaders del Router hacen prefetch vía Query; los componentes consumen con `useQuery`/`useSuspenseQuery`.
-- Nota para el harness: los `.d.ts` de TanStack Router son ilegibles para LLMs. El agente no debe intentar "leer" los tipos generados; las convenciones de rutas se documentan en CLAUDE.md con ejemplos concretos.
+- **Server functions (`createServerFn`) NO se usan para datos de dominio.** Son RPC por inferencia —la misma magia que rechaza §Cliente API—: el data path es siempre el fetch tipado + contrato de `packages/shared`. Reservadas, si acaso, para ocultar un secreto de terceros server-side; nunca para la app.
+- **Selección de modo (default + trigger, sin decisión ad hoc del agente):** SSR por defecto si el proyecto tiene superficie pública indexable o el first-paint/SEO importa; SPA (`spa: { enabled: true }`) para tools internos sin SEO. El modo elegido se fija en el CLAUDE.md del proyecto.
+- **SSR-safe desde el día uno:** cero globals de browser (`window`, `document`, `localStorage`) en scope de módulo; así SPA↔SSR es un flip de config, no un refactor.
+- **En SSR el loader corre en server:** el fetch a Hono usa base URL isomórfica (interna en server, relativa en cliente) y **forwardea la cookie de sesión** del request entrante para que better-auth valide server-side.
+- **Prohibido** guardar datos de servidor en Zustand: si viene de la API, vive en TanStack Query (cache, invalidación, loaders). Stores pequeños por dominio de UI, con selectores; nunca un store global monolítico.
+- Loaders hacen prefetch vía Query; los componentes consumen con `useQuery`/`useSuspenseQuery`.
+- Nota para el harness: los `.d.ts` de TanStack Router/Start son ilegibles para LLMs. El agente no "lee" los tipos generados; las convenciones de rutas se documentan en CLAUDE.md con ejemplos concretos.
 
-**Umbral de revisión.** Adoptar TanStack Start cuando: v1.0 final + RSC shipeado + necesidad real de SSR/SEO en el proyecto. Si un proyecto exige SEO hoy: evaluar Start RC vs Next.js vía ADR (no hay default).
+**Umbral de revisión.** RSC: adoptar cuando deje de ser experimental y haya necesidad real (hoy no se usa; el data path por fetch tipado no lo requiere). Framework: reconsiderar solo si Start estanca mantenimiento o rompe compatibilidad hacia atrás de forma recurrente; Next.js queda como alternativa documentada vía ADR si un cliente ya lo impone.
 
 ## UI: Tailwind CSS v4 + shadcn/ui
 
@@ -156,7 +160,7 @@ Decisiones cerradas. Formato por componente: **Decisión → Justificación → 
 
 ## Build y ejecución (monorepo TS)
 
-**Decisión.** ESM only (`"type": "module"` en todos los package.json). Los paquetes internos (`shared`, `db`) se consumen como TS source directo (sus `exports` apuntan a `src/`, sin build propio). `apps/api`: desarrollo con `tsx watch`, producción con bundle de `tsup` (esbuild) a un `dist/` único con `node_modules` como externals. `apps/web`: Vite.
+**Decisión.** ESM only (`"type": "module"` en todos los package.json). Los paquetes internos (`shared`, `db`) se consumen como TS source directo (sus `exports` apuntan a `src/`, sin build propio). `apps/api`: desarrollo con `tsx watch`, producción con bundle de `tsup` (esbuild) a un `dist/` único con `node_modules` como externals. `apps/web`: TanStack Start (build sobre Vite; server SSR con Nitro, o estático en modo SPA).
 
 **Justificación.** Cero pasos de generación intermedios = cero estados desincronizados que el agente pueda olvidar regenerar (el mismo principio por el que Drizzle ganó a Prisma). El `moduleResolution: bundler` del tsconfig ([04-convenciones-codigo.md](04-convenciones-codigo.md)) exige exactamente este modelo. tsx y tsup son boring, ubicuos y casi sin config.
 

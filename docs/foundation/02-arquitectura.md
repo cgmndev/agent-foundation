@@ -74,7 +74,7 @@ La forma del boundary HTTP es parte de la arquitectura: idéntica en todos los p
 
 ```
 apps/web/src/
-├── routes/            # File-based routing (TanStack Router)
+├── routes/            # File-based routing (TanStack Start / Router)
 ├── features/<feature>/
 │   ├── index.ts       # Interfaz pública de la feature
 │   ├── components/    # Componentes propios de la feature

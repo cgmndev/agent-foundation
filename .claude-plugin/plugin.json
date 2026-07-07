@@ -1,7 +1,7 @@
 {
   "name": "agent-foundation",
   "description": "Harness agent-first de la fundación: lifecycle de specs (new/activate/change/close), guardias de enforcement (secrets, migraciones, deps, main, drift, archive), scaffolding de módulos/features, revisor en contexto fresco e init de proyectos.",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "author": {
     "name": "Claudio",
     "email": "claudio@cgmn.dev"
