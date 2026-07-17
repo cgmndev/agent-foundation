@@ -12,14 +12,17 @@ Contrato: `docs/foundation/12-guia-specs.md` §7 y §2 (hashing).
 
 1. Localiza `specs/active/*-<slug>` y lee `spec.md`.
 2. **Gates:** `format` del artefacto compatible (12-guia §2 — si falta o es mayor al que conoces, para y dilo), la sección "Preguntas abiertas" vacía y `status: draft`. Si algo falla, explica qué y para.
-3. **Activa:** `status: active`, `updated:` hoy. Stampea el hash — única forma válida de escribir hashes:
+3. **Gate del modo** (lee el ADR 0001 del proyecto; 12-guia §7):
+   - **Consultoría:** pide confirmación de que existe la aprobación ESCRITA del aprobador nombrado, por el canal declarado. Sin aprobación escrita, no se activa.
+   - **Producto propio:** verifica la separación temporal — el `created` de la spec no puede ser de esta misma sesión (mínimo una noche de por medio; si dudas, pregunta) — y que las 3 preguntas de activación (11-sistema-specs, Decisión 9) están respondidas por escrito en la spec. Si faltan, para y dilo: el gate filtra entusiasmo, no burocracia.
+4. **Activa:** `status: active`, `updated:` hoy. Stampea el hash — única forma válida de escribir hashes:
    ```bash
    node "${CLAUDE_PLUGIN_ROOT:-.}/scripts/spec-hash.mjs" stamp specs/active/<carpeta> spec
    ```
-4. **Ofrece generar `plan.md`.** Si acepta:
+5. **Ofrece generar `plan.md`.** Si acepta:
    - ANTES de proponer enfoque, lee: `docs/architecture.md`, los ADRs relevantes de `docs/decisions/` y `docs/foundation/02-arquitectura.md`. El plan no contradice ADRs vigentes; si lo hace, para y resuélvelo con el usuario.
    - Plantilla: `docs/foundation/plantillas/plantilla-plan.md`. Obligatorio completar: superficie de cambio (§3), impacto en capa durable (§4) y mapeo AC→test (§5).
    - El review humano del plan es el de mayor valor del ciclo: presenta los trade-offs y espera su OK.
    - Tras el OK: `node "${CLAUDE_PLUGIN_ROOT:-.}/scripts/spec-hash.mjs" stamp specs/active/<carpeta> plan`
-5. **Ofrece generar `tasks.md`** desde el plan (plantilla `plantilla-tasks.md`): tasks = vertical slices ejecutables; cada AC con su test EN la misma task, nunca en una fase final de testing. Tras revisión rápida del usuario: `stamp specs/active/<carpeta> tasks`.
-6. **Resumen:** status, hash stampeado, y siguiente paso (implementar por tasks, marcando checkboxes al completar cada una).
+6. **Ofrece generar `tasks.md`** desde el plan (plantilla `plantilla-tasks.md`): tasks = vertical slices ejecutables; cada AC con su test EN la misma task, nunca en una fase final de testing. Tras revisión rápida del usuario: `stamp specs/active/<carpeta> tasks`.
+7. **Resumen:** status, hash stampeado, y siguiente paso (implementar por tasks, marcando checkboxes al completar cada una).

@@ -6,7 +6,7 @@ Este repo ES dos cosas: la **suite de decisiones** (`docs/foundation/`) y el **h
 
 | Qué | Dónde | Su documentación |
 |---|---|---|
-| Decisiones y convenciones (00–12) | `docs/foundation/` | `00-INDICE.md` |
+| Decisiones y convenciones (00–14) | `docs/foundation/` | `00-INDICE.md` |
 | Plantillas de artefactos (spec, plan, tasks, ADR, docs vivos, CLAUDE.md) | `docs/foundation/plantillas/` | `12-guia-specs.md` |
 | Manifiesto del plugin + marketplace | `.claude-plugin/` | sí mismo |
 | Skills (workflows: specs, scaffolding, review, init) | `skills/<nombre>/SKILL.md` | cada SKILL.md ES su doc |

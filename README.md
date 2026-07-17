@@ -11,7 +11,7 @@ No es una aplicación. El mapa completo de dónde está cada cosa: [CLAUDE.md](C
 
 ## Mapa rápido
 
-- [`docs/foundation/`](docs/foundation/00-INDICE.md) — la suite (00–12). Empezar por el índice.
+- [`docs/foundation/`](docs/foundation/00-INDICE.md) — la suite (00–14). Empezar por el índice.
 - [`docs/foundation/plantillas/`](docs/foundation/plantillas/) — plantillas: spec, plan, tasks, ADR, docs vivos, CLAUDE.md.
 - [`skills/`](skills/) · [`agents/`](agents/) · [`hooks/`](hooks/hooks.json) · [`scripts/`](scripts/) — el harness (cada pieza se autodocumenta).
 - [`.claude-plugin/`](.claude-plugin/) — manifiesto del plugin y marketplace.
@@ -28,7 +28,7 @@ Maquinaria centralizada (se actualiza vía plugin) · decisiones snapshoteadas p
 
 ## Estado
 
-- Suite unificada (2026-07-06, ronda 1 de iteración aplicada) · Harness v0.3.0 · batería de pruebas en verde.
+- Suite v1.5 (2026-07-16, reconciliada con la línea del vault: cosecha ProjectAI + dual-mode) · Harness v0.4.1 · batería de pruebas en verde (47/47).
 - **Congelado en features** hasta la validación real (primera feature de un proyecto real por el ciclo completo, checkpoint C1-C6). Solo entran fixes de fricción real.
 
 ## Pendiente

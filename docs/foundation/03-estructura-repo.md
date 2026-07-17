@@ -1,7 +1,7 @@
 ---
 doc: estructura-repo
-version: 1.1
-fecha: 2026-07-06
+version: 1.5
+fecha: 2026-07-16
 estado: vigente
 tipo: capa-durable
 ---
@@ -23,13 +23,15 @@ Layout estándar de todo proyecto nuevo. Monorepo con workspaces nativos. El age
 │   │   │   └── main.ts         # Entry point (server, señales, graceful shutdown)
 │   │   ├── drizzle/            # Migraciones generadas
 │   │   └── package.json
-│   └── web/                    # Frontend React + TanStack Start (SSR/SPA)
+│   └── web/                    # Frontend React + TanStack Start (modo SPA)
 │       ├── src/                # (layout en 02-arquitectura.md)
 │       └── package.json
 ├── packages/
-│   ├── shared/                 # Schemas Zod de contrato + tipos + constantes de dominio
+│   ├── shared/                 # Contratos API + schemas Zod + tipos + constantes de dominio
 │   │   └── src/
 │   │       ├── schemas/        # Un archivo por entidad: user.schema.ts, order.schema.ts
+│   │       ├── contracts/      # Route builders explícitos: método + path + schemas por endpoint
+│   │       ├── client.ts       # Fetch wrapper tipado (~100 líneas, alcance congelado; ver 01)
 │   │       └── index.ts        # Exports explícitos
 │   └── db/                     # Schema Drizzle (fuente de verdad de datos)
 │       └── src/
@@ -39,10 +41,11 @@ Layout estándar de todo proyecto nuevo. Monorepo con workspaces nativos. El age
 │   ├── active/                 # Specs en curso: una carpeta AAAA-MM-slug por feature
 │   └── archive/                # Specs cerradas, por mes de cierre (AAAA-MM/)
 ├── docs/
-│   ├── foundation/              # ESTA suite (snapshot del vault; incluye plantillas/)
+│   ├── foundation/              # ESTA suite (snapshot vía /init-project; incluye plantillas/)
 │   ├── decisions/              # ADRs numerados, inmutables (plantillas/plantilla-adr.md)
 │   ├── architecture.md         # Doc vivo de arquitectura (instancia de plantilla)
 │   ├── domain.md               # Doc vivo de dominio (instancia de plantilla)
+│   ├── roadmap.md              # Parking de evoluciones futuras (14-roadmap-parking.md)
 │   └── runbook.md              # 1 página: deploy, rollback, restore, contactos (08-devops.md)
 ├── .claude/
 │   └── settings.json           # Permissions del proyecto (skills y hooks NO se copian: llegan por el plugin `agent-foundation`)
@@ -55,8 +58,10 @@ Layout estándar de todo proyecto nuevo. Monorepo con workspaces nativos. El age
 ├── docker-compose.yml          # Postgres local + servicios de dev
 ├── .env.example                # TODAS las variables, documentadas, sin valores reales
 ├── pnpm-workspace.yaml         # Workspaces del monorepo (apps/*, packages/*)
-└── package.json                # Scripts raíz + campo packageManager (pnpm)
+└── package.json                # Scripts raíz + campo packageManager (pnpm, instalado explícito sin corepack)
 ```
+
+Cuando el monorepo crece, `apps/api` y `apps/web` pueden llevar su propio `CLAUDE.md` anidado (patrón jerárquico, ver [09-agentes.md](09-agentes.md)).
 
 ## Reglas de dependencia entre paquetes
 

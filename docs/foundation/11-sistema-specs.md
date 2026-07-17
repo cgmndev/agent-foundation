@@ -1,10 +1,11 @@
 ---
 doc: sistema-specs
-version: 1.2
-fecha: 2026-07-06
+version: 1.5
+fecha: 2026-07-16
 estado: vigente
 tipo: capa-durable
 changelog:
+  - "1.5 (versionado unificado de suite): Decisión 9 — dos modos de operación (consultoría / producto propio, D17 de la capa conceptual): adversario, gate de aprobación y umbral extra por modo; refinamientos de grilling (facts vs decisions, una pregunta a la vez, confirmation gate) elevados a contrato en la guía; métricas adicionales del checkpoint."
   - "1.2: Integración en la suite unificada (doc 11). Diagnóstico comprimido a Fundamentos; radar de fuentes movido a 00-INDICE; roadmap retirado (pasa a spec del meta-repo); ejemplos alineados al stack final (Node LTS runtime); rutas canónicas: specs/ en raíz + docs/decisions/."
   - "1.1: Protocolo de cambio mid-feature, trazabilidad AC→tests, trabajo no-feature, criterios de checkpoint, paralelización."
   - "1.0: Versión inicial consolidando las tres investigaciones de jul-2026."
@@ -108,6 +109,8 @@ SDD no aplica a todo. Reglas de decisión:
 
 Principio general: `spec.md` existe cuando hay un QUÉ nuevo que acordar; `plan.md` cuando el CÓMO tiene riesgo o decisiones; `tasks.md` cuando hay ejecución multi-paso que un agente debe seguir sin desviarse.
 
+Cada modo de operación añade UN umbral extra propio sobre esta tabla (Decisión 9): en consultoría, el de "cliente no técnico → spec siempre"; en producto propio, "toca dominio → spec siempre".
+
 ## DECISIÓN 7 — Protocolo de cambio mid-feature
 
 Tres ramas según impacto en los acceptance criteria: (1) no toca ACs → editar plan/tasks y recalcular hashes; (2) toca ≤ 1/3 de los ACs sin invalidar trabajo hecho → `/change-spec`: bump de versión + changelog + re-aprobación; (3) invalida el enfoque → cerrar como `superseded` y abrir spec nueva con `supersedes:`.
@@ -123,6 +126,24 @@ Para cuando se activen sesiones paralelas de agentes (worktrees):
 - La capa durable (`docs/`) solo se edita desde la rama principal o en el ritual `/close-spec`, nunca concurrentemente desde dos worktrees.
 - Umbral de activación: esta decisión permanece dormida hasta que haya ≥ 2 features grandes simultáneas de forma habitual. No montar la infraestructura antes de necesitarla.
 
+## DECISIÓN 9 — Dos modos de operación (dual-mode)
+
+El sistema opera en exactamente UN modo por proyecto, declarado en el ADR 0001 del día cero. El núcleo (lifecycle, hashes, trazabilidad AC→test, ritual de cierre, enforcement) es **invariante**; lo que cambia es el adversario contra el que el sistema protege — y con él, el gate de aprobación:
+
+| | MODO CONSULTORÍA | MODO PRODUCTO PROPIO |
+|---|---|---|
+| Adversario | El malentendido con el cliente | El yo-futuro sin contexto + el yo-presente con entusiasmo |
+| Función primaria de la spec | Interfaz de comunicación + contrato | Compresión de intención + registro de evolución del producto |
+| Aprobador del gate | El cliente (persona nombrada en ADR 0001, aprobación **escrita** por canal declarado) | Uno mismo, con **separación temporal obligatoria**: `/new-spec` y `/activate-spec` jamás en la misma sesión (mínimo una noche), y 3 preguntas respondidas por escrito en la spec: ¿lo construiría al doble de costo? ¿qué deja de avanzar? ¿los NO-GOALS son reales? |
+| Changelog de specs | Protección contractual (quién pidió qué y cuándo) | Historia de producto ("qué creía querer y cuándo cambié de opinión") |
+| Umbral extra de spec | Cliente no técnico participa → spec siempre | Toca dominio (entidades, reglas RN-NN, flujos de usuario) → spec siempre, aunque sea corta |
+| plan.md | Siempre (comunica el CÓMO) | Opcional en features chicas sin trade-offs (registrar la adaptación en el ADR 0002) |
+
+Reglas:
+- El modo no se mezcla dentro de un proyecto; si un producto propio gana un cliente/socio, se migra formalmente con un ADR.
+- **Lo invariante es innegociable en ambos modos** — sin presión externa, el enforcement es lo único que sostiene la disciplina, y el checkpoint solo mide el sistema si el sistema se ejecuta completo.
+- Los deltas operativos finos de cada modo (rituales, anti-patrones, pipeline de ideas del modo propio) viven en la capa conceptual del vault (manuales de modo); esta decisión fija lo estructural que la maquinaria y la guía ([12-guia-specs.md](12-guia-specs.md)) implementan.
+
 ## Checkpoint de validación (criterios ex-ante)
 
 El plan de adopción es trabajo, no doctrina: vive como spec del propio meta-repo de la fundación. Lo durable son los criterios de éxito, definidos antes de usar el sistema:
@@ -137,6 +158,8 @@ El plan de adopción es trabajo, no doctrina: vive como spec del propio meta-rep
 | C6 | Tamaño de capa viva | `architecture.md` y `domain.md` < 500 líneas cada uno | `wc -l` |
 
 Si ≥ 5 de 6 se cumplen tras ~2 meses de uso real → el sistema queda como estándar. Si fallan C1 o C6 → simplificar la capa viva. Si falla C2 → revisar calidad de specs (probablemente ambigüedad en ACs).
+
+Registrar además durante la validación (no son criterios, son señales de honestidad del sistema): **% de ACs marcados `manual`/exentos** (si crece, C4 se está gameando), **horas/semana dedicadas al sistema en sí** (no al producto — el costo que C1 no captura), y **frecuencia de asks del drift-check** (trigger de la escalación de scoping).
 
 ## Riesgos asumidos
 

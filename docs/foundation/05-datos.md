@@ -1,7 +1,7 @@
 ---
 doc: datos
-version: 1.1
-fecha: 2026-07-06
+version: 1.5
+fecha: 2026-07-16
 estado: vigente
 tipo: capa-durable
 ---
@@ -64,6 +64,12 @@ updatedAt: timestamp({ withTimezone: true }).notNull().defaultNow().$onUpdate(()
 - Conexiones: pool del driver con límites explícitos; si el deploy es serverless/muchas instancias, PgBouncer o el pooler gestionado del proveedor.
 - Backups automáticos del proveedor + verificación de restore al menos una vez por proyecto antes de go-live.
 - Extensiones permitidas por defecto: `pgcrypto`, `pg_trgm` (búsqueda), `pgvector` solo si el proyecto tiene features de IA con embeddings (ADR).
+
+## Jobs (pg-boss) y la base de datos
+
+- pg-boss gestiona sus propias tablas en el schema `pgboss`: quedan fuera de las migraciones Drizzle y no se tocan a mano. Para diagnóstico, solo lectura (`SELECT name, state, COUNT(*) FROM pgboss.job GROUP BY 1, 2`).
+- El pool se comparte entre API, worker y pg-boss: límites explícitos siempre (punto de partida: app ~10, pg-boss ~5, margen para migraciones/admin).
+- Encolar + escribir: regla de transaccionalidad y compensación en [01-stack.md](01-stack.md) (sección pg-boss).
 
 ## Reglas anti-error para el agente (resumen cargable)
 

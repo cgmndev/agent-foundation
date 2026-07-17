@@ -1,7 +1,7 @@
 ---
 doc: convenciones-codigo
-version: 1.1
-fecha: 2026-07-06
+version: 1.5
+fecha: 2026-07-16
 estado: vigente
 tipo: capa-durable
 ---
@@ -106,9 +106,10 @@ export class ConflictError extends AppError { /* status 409 */ }
 ## Git
 
 - **Trunk-based con PRs cortas.** `main` siempre deployable; branches viven <2-3 días.
+- **Squash and Merge como política única.** Un PR = un commit en `main`: historial lineal y auditable. El título del PR sigue Conventional Commits (es el mensaje del commit resultante). Branch protection: checks obligatorios, rama al día antes de merge, solo squash habilitado, borrado automático de ramas.
 - **Conventional Commits** (`feat:`, `fix:`, `chore:`, `refactor:`, `test:`, `docs:`) — habilita changelog automático y da estructura que el agente sigue bien.
 - **Pre-commit con lefthook** (`lefthook.yml` en raíz, idéntico entre proyectos): `biome check --write` sobre staged + `tsc --noEmit`. Es enforcement a nivel git: aplica igual a humanos, agentes y CI.
-- Un commit = un cambio lógico. El agente commitea al cerrar cada task del spec, no en mega-commits.
+- Un commit = un cambio lógico. El agente commitea al cerrar cada task del spec, no en mega-commits (los commits granulares viven en la rama; el squash los integra como uno solo por PR).
 - PR con descripción: qué, por qué, cómo probar, spec/task asociado. Los PR de agente se revisan SIEMPRE en contexto fresco (nunca en la misma sesión que implementó).
 - Prohibido `git push --force` a `main` y commits directos a `main` (branch protection + deny rule del harness).
 

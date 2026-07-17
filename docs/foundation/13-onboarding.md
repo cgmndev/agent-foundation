@@ -1,7 +1,7 @@
 ---
 doc: onboarding
-version: 1.0
-fecha: 2026-07-06
+version: 1.5
+fecha: 2026-07-16
 estado: vigente
 tipo: capa-durable
 ---
@@ -27,8 +27,9 @@ feedback loop (`pnpm check && pnpm test`) verifican. Sin verde no hay done.
 
 ## 2. Setup (10 minutos)
 
-Requisitos: Node LTS, Docker, Claude Code. pnpm llega vía `corepack enable` (el repo fija la
-versión en `packageManager`).
+Requisitos: Node LTS, Docker, Claude Code. pnpm se instala explícito — `npm install -g pnpm@<versión>`
+con la versión que fija el campo `packageManager` del repo (sin corepack; Node anunció su salida
+de la distribución por defecto — [01-stack.md](01-stack.md)).
 
 ```bash
 # 1. Harness (una vez por máquina)
@@ -38,7 +39,7 @@ versión en `packageManager`).
 
 # 2. Proyecto
 git clone <repo-del-proyecto> && cd <proyecto>
-corepack enable && pnpm install
+npm install -g pnpm@<versión-de-packageManager> && pnpm install
 docker compose up -d          # Postgres local
 pnpm db:migrate && pnpm db:seed
 pnpm dev                      # api + web en watch

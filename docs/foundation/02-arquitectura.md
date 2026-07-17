@@ -1,7 +1,7 @@
 ---
 doc: arquitectura
-version: 1.2
-fecha: 2026-07-06
+version: 1.5
+fecha: 2026-07-16
 estado: vigente
 tipo: capa-durable
 ---
@@ -28,14 +28,15 @@ En una frase: *las capas viven dentro del módulo, no el módulo dentro de las c
 ```
 apps/api/src/modules/<modulo>/
 ├── index.ts          # ÚNICA interfaz pública del módulo (exports explícitos)
-├── <modulo>.routes.ts    # Endpoints Hono + validación Zod (boundary HTTP)
+├── <modulo>.routes.ts    # Adjunta handlers a los contratos de shared (boundary HTTP)
 ├── <modulo>.service.ts   # Lógica de negocio (funciones puras donde sea posible)
 ├── <modulo>.repo.ts      # Acceso a datos (Drizzle). Único lugar con queries
 ├── <modulo>.types.ts     # Tipos internos del módulo
+├── <modulo>.jobs.ts      # (Si aplica) Handlers pg-boss del dominio
 └── <modulo>.test.ts      # Test boundary del módulo (ver 06-testing.md)
 ```
 
-Tres capas internas, con dependencia en un solo sentido: `routes → service → repo`. Nada más. Sin `dto/`, sin `mappers/`, sin `interfaces/` genéricas, sin factory de repositorios.
+Tres capas internas, con dependencia en un solo sentido: `routes → service → repo`. Nada más. Sin `dto/`, sin `mappers/`, sin `interfaces/` genéricas, sin factory de repositorios. Los handlers de jobs (`.jobs.ts`) son un segundo boundary de entrada equivalente a `routes`: validan el payload (schema de `shared` que extiende `baseJobPayloadSchema`) y delegan al service.
 
 ## Reglas duras (enforcement, no sugerencia)
 
@@ -74,17 +75,19 @@ La forma del boundary HTTP es parte de la arquitectura: idéntica en todos los p
 
 ```
 apps/web/src/
-├── routes/            # File-based routing (TanStack Start / Router)
+├── routes/            # File-based routing (TanStack Start, modo SPA)
 ├── features/<feature>/
 │   ├── index.ts       # Interfaz pública de la feature
 │   ├── components/    # Componentes propios de la feature
 │   ├── hooks/         # useQuery/useMutation de la feature
-│   └── store.ts       # Zustand SOLO si hay estado de cliente real
-├── components/ui/     # Design system compartido (botones, inputs...)
-└── lib/               # Cliente API (fetch tipado + schemas/rutas de shared), config Query
+│   └── store.ts       # Zustand SOLO si el estado cruza rutas (useState/URL primero)
+├── components/ui/     # Shadcn UI generado + wrappers propios del design system
+└── lib/               # Cliente API tipado (consume contratos de packages/shared), config Query
 ```
 
 - Las rutas son delgadas: componen features, no contienen lógica.
+- **Toda ruta define `errorComponent` y `__root` lleva el fallback global.** Resiliencia en dos capas complementarias: TanStack Query maneja los errores de red/API (retry, 401 → login); `errorComponent` aísla los errores de render (contenido malformado, `.map` sobre `undefined`) a la ruta afectada y evita la pantalla blanca de toda la SPA. Ruta nueva sin `errorComponent` es defecto.
+- **Server functions de Start no son un segundo backend:** prohibido que toquen DB o contengan reglas de negocio; todo pasa por la API Hono vía los contratos de `shared`.
 - Server state en Query, client state en Zustand ([01-stack.md](01-stack.md)); esta separación es regla dura.
 - Una feature no importa componentes internos de otra feature; solo vía `index.ts`.
 
@@ -94,7 +97,7 @@ apps/web/src/
 |---|---|
 | Segunda implementación real de una dependencia (p. ej. segundo proveedor de pagos) | Introducir interfaz/puerto SOLO ahí, en ese módulo |
 | Un módulo necesita reaccionar a eventos de otros 3+ módulos | Evaluar event emitter in-process (ADR) |
-| Background jobs con volumen real | pg-boss sobre Postgres; colas externas solo con evidencia |
+| Cola externa (SQS/RabbitMQ/Kafka) | Solo si pg-boss —el default ya decidido— no cubre la escala medida (ADR) |
 | Dos apps despliegan con cadencias incompatibles | Evaluar extraer servicio (ADR); nunca preventivamente |
 | El monorepo supera lo que un agente puede navegar con grep + convenciones | Reforzar docs de módulo (`README.md` por módulo) antes que partir el repo |
 

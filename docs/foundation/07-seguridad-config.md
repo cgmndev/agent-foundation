@@ -1,7 +1,7 @@
 ---
 doc: seguridad-config
-version: 1.1
-fecha: 2026-07-06
+version: 1.5
+fecha: 2026-07-16
 estado: vigente
 tipo: capa-durable
 ---
@@ -52,7 +52,7 @@ export const config = EnvSchema.parse(process.env);
 - **SQL injection:** cubierto por Drizzle/parámetros; SQL crudo siempre con placeholders (`sql` template). String interpolation en queries = defecto bloqueante.
 - **XSS:** React escapa por defecto; `dangerouslySetInnerHTML` prohibido salvo ADR con sanitización (DOMPurify).
 - **CORS:** allowlist explícita de orígenes por entorno en config; nunca `*` con credentials.
-- **Rate limiting:** en endpoints de auth y públicos desde el día uno (middleware simple sobre Postgres/memoria; infra dedicada solo si escala).
+- **Rate limiting:** en endpoints de auth y públicos desde el día uno, y **obligatorio en todo endpoint que encole jobs o dispare llamadas a un LLM** — nunca exponer generación de costo sin límite. Key: `userId` con fallback a IP. Store in-memory es válido en el Perfil B de despliegue (proceso único por instancia); con múltiples instancias, store sobre Postgres.
 - **Headers:** `secureHeaders()` de Hono activado en `app.ts`.
 - **Uploads:** validar tipo/tamaño server-side, almacenar en object storage (S3/OCI), nunca en el filesystem del contenedor; servir con URLs firmadas.
 - **Logs sin PII sensible ni secretos:** redactar (pino `redact`) `password`, `token`, `authorization`, y campos sensibles del dominio.

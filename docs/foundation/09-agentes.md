@@ -1,14 +1,14 @@
 ---
 doc: agentes
-version: 1.1
-fecha: 2026-07-06
+version: 1.5
+fecha: 2026-07-16
 estado: vigente
 tipo: capa-durable
 ---
 
 # 09 — Integración con Agentes (Claude Code)
 
-Cómo este paquete alimenta al agente sin inflar contexto. Complementa (no reemplaza) el harness de roles y el sistema de specs, que tienen documentación propia.
+Cómo este paquete alimenta al agente sin inflar contexto. Complementa (no reemplaza) el harness de roles (documentación separada) y el sistema de specs ([11](11-sistema-specs.md)–[12](12-guia-specs.md)).
 
 ## Principios de contexto
 
@@ -50,6 +50,10 @@ Llegan con el plugin `agent-foundation` (no se copian al repo); cada `SKILL.md` 
 - `/init-project`: instancia la fundación completa en un repo nuevo (día cero, parte mecánica).
 - Regla general: skills ligeras propias sobre frameworks pesados de terceros.
 
+## CLAUDE.md jerárquicos
+
+El CLAUDE.md raíz se mantiene corto (~150 líneas). Cuando una app acumula reglas propias, se extraen a un CLAUDE.md anidado que Claude Code carga automáticamente al trabajar en ese directorio: `apps/api/CLAUDE.md` (módulos, jobs, datos), `apps/web/CLAUDE.md` (UI, polling, errorComponent, testing frontend) e `infra/CLAUDE.md` en el Perfil B (qué puede tocar el agente: compose y `.env.template` con placeholders; qué no: valores reales, comandos de aprovisionamiento). Regla anti-drift: cada regla vive en UN solo nivel — el anidado especializa, nunca repite al raíz.
+
 ## Flujo de trabajo estándar de una task
 
 1. Sesión limpia → cargar CLAUDE.md (automático) + doc(s) de fundación según tabla + spec/task activa.
@@ -65,4 +69,5 @@ Llegan con el plugin `agent-foundation` (no se copian al repo); cada `SKILL.md` 
 - `docs/domain.md` al introducir conceptos de dominio nuevos.
 - README de módulo si el módulo supera ~6 archivos.
 - ADR cuando una task tome una decisión que contradiga o extienda este paquete.
+- `docs/roadmap.md` cuando una idea buena queda fuera de alcance: se registra en el parking (formato en [14-roadmap-parking.md](14-roadmap-parking.md)) en lugar de implementarse.
 El drift de estos documentos se audita al cierre de cada spec (parte del `/close-spec`).

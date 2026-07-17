@@ -1,7 +1,7 @@
 ---
 doc: stack
-version: 1.4
-fecha: 2026-07-06
+version: 1.5
+fecha: 2026-07-16
 estado: vigente
 tipo: capa-durable
 ---
@@ -15,108 +15,141 @@ Decisiones cerradas. Formato por componente: **Decisión → Justificación → 
 | Capa | Decisión | Versión base |
 |---|---|---|
 | Lenguaje | TypeScript estricto end-to-end | 5.x, `strict: true` |
-| Runtime producción | **Node LTS** (22/24) | LTS activa |
-| Package manager / tasks | **pnpm** (campo `packageManager`) | 10.x |
+| Runtime (todos los entornos) | **Node LTS** (22/24) | LTS activa |
+| Package manager / task runner | **pnpm** (pinneado en `packageManager`, instalado explícito) | mayor estable |
+| Módulos JS | ESM only (`"type": "module"`) | — |
+| Build backend | **tsx** (dev y scripts) + **tsup** (bundle prod) | estables |
 | HTTP framework | **Hono** | 4.x |
-| Frontend | React + **TanStack Start** (SSR o SPA por proyecto) + **TanStack Query** | v1.0+ |
+| Contrato API | **Zod explícito en `packages/shared`** (route builders, sin RPC) | — |
+| Frontend | React + **TanStack Start en modo SPA** + **TanStack Query** | Start 1.x |
 | Estado cliente | **Zustand** | 5.x |
-| Estilos / UI kit | **Tailwind CSS v4** + **shadcn/ui** | estables |
-| Formularios | **react-hook-form** + resolver Zod | estables |
+| UI y formularios | **Shadcn UI + Tailwind v4 + lucide-react + React Hook Form** (`zodResolver`) | estables |
+| Reactividad | **Short-polling** vía TanStack Query (`refetchInterval`) | — |
 | Validación | **Zod** | v4 |
 | ORM | **Drizzle** | estable |
-| Base de datos | **PostgreSQL** | 16+ gestionado |
+| Base de datos | **PostgreSQL** | 16+ (gestionado o contenedor según perfil de despliegue) |
+| Jobs en background | **pg-boss** (cola transaccional sobre Postgres) | estable |
 | Auth | **better-auth** | estable |
-| Testing | **Vitest** + Testcontainers + Playwright (smoke) | estables |
+| Testing | **Vitest** + Testcontainers + Playwright (money paths) | estables |
 | Lint/format | **Biome** (+ `tsc --noEmit` como gate de tipos) | 2.x |
 | Logging | **pino** (JSON estructurado) | estable |
-| Monorepo | Workspaces de pnpm (sin Turborepo inicial) | — |
-| Módulos JS | ESM only (`"type": "module"`) | — |
-| Build backend | **tsx** (dev) + **tsup** (bundle prod) | estables |
+| Monorepo | Workspaces nativos de pnpm (sin Turborepo inicial) | — |
 
-## Runtime y toolchain: Node LTS + pnpm
+## Runtime y toolchain: Node en todos los entornos + pnpm
 
-**Decisión.** Node LTS (22/24) es el único runtime, en desarrollo y producción. **pnpm** es el package manager y task runner (`pnpm <script>`), fijado con el campo `packageManager` del package.json raíz (vía Corepack mientras la LTS lo incluya; en CI, la action de setup lee ese campo). Bun sale del stack — reversión documentada en el umbral.
+**Decisión.** Node LTS es el único runtime en desarrollo, CI y producción (paridad total). pnpm es el package manager y task runner, con versión pinneada en `packageManager` e instalación explícita (sin corepack). Bun queda fuera del stack por completo, también como toolchain.
 
-**Justificación.** La compatibilidad sigue siendo el criterio dominante para software de clientes (native addons, APM/OTel, soporte cloud). El híbrido anterior (Bun como instalador/lanzador sobre runtime Node) quedó reducido a usar solo el instalador, al precio de varias reglas de contención — incluida la trampa `bun test` vs el script de Vitest — y un Docker de doble base. pnpm elimina la dualidad y conserva la ventaja donde importaba: su store global con hard links hace los installs casi instantáneos en worktrees paralelos (el escenario de sesiones de agente concurrentes). Y añade lo que Bun no da: **estrictez sin phantom dependencies** — un import no declarado en package.json falla ruidosamente en vez de funcionar por hoisting accidental (veredicto binario, principio de enforcement). Workspaces maduros y masivamente representados en training data.
+**Justificación.** Un solo runtime en todos los entornos elimina una clase entera de fricciones (resolución de módulos, lifecycle scripts, divergencias sutiles entre instalación y ejecución) y reduce la superficie de reglas de contención del harness: desaparece la vigilancia de APIs `Bun.*` y de diferencias install/runtime. La velocidad que se cede la recupera pnpm en gran parte con su store global content-addressable y hard links — con una sinergia directa con la paralelización por **git worktrees**: cada worktree instala en segundos reutilizando el store. pnpm añade además lo que Bun no daba: **estrictez sin phantom dependencies** (un import no declarado falla ruidosamente — veredicto binario). Node 22/24 ya integró los DX wins relevantes (TS type stripping para scripts, test runner, watch mode, `--env-file`). Es boring technology aplicado con coherencia: las horas no perdidas en edge cases de doble runtime valen más que los segundos ganados en install.
 
 **Reglas.**
-- `pnpm <script>` es la forma canónica: `pnpm check`, `pnpm test`, `pnpm db:generate`… Los nombres estandarizados de [03-estructura-repo.md](03-estructura-repo.md) no cambian.
-- Lockfile `pnpm-lock.yaml` commiteado; CI y Docker instalan con `--frozen-lockfile`.
+- `packageManager` pinneado en el `package.json` raíz como declaración de versión; **CI y Docker instalan pnpm explícitamente** (versión pinneada), sin depender de corepack — Node ya anunció su salida de la distribución por defecto.
+- CI instala con `pnpm install --frozen-lockfile` + cache del store de pnpm.
 - Workspaces declarados en `pnpm-workspace.yaml`; dependencias internas con protocolo `workspace:*`.
-- Los tests corren en el runtime que se despliega (Node); no introducir runtimes ni runners alternativos. Scripts utilitarios: `tsx` o `node --experimental-strip-types`.
+- Drivers de ecosistema siempre (`pg`/`postgres.js` vía Drizzle); nada atado a un runtime específico.
+- Tests corren sobre Node (Vitest): el runtime de tests es el runtime que se despliega.
+- Scripts utilitarios con `tsx`, único runner del repo (el type stripping nativo de Node cambia de flags entre versiones; tsx es estable y suficiente).
 
-**Umbral de revisión (reversión de Bun, 2026-07).** Bun se retiró porque el híbrido pagaba dualidad estructural (reglas de contención + trampa `bun test` + Docker de dos bases) para aprovechar solo su instalador, y pnpm cubre la mayor parte de esa ventaja sin runtime dual. Reconsiderar Bun — como runtime+PM completo, no como híbrido — si: (a) los installs se vuelven cuello real en CI/worktrees (>1-2 min con caché), o (b) el ecosistema agéntico consolida tooling Bun-first (Bun pertenece a Anthropic desde dic-2025 y Claude Code corre sobre él), y además (c) la suite pasa 100% en Bun y (d) el APM elegido lo soporta oficialmente.
+**Umbral de revisión (reversión de Bun, 2026-07, documentada).** Bun se retiró porque el híbrido pagaba dualidad estructural (reglas de contención + trampa `bun test` + Docker de dos bases) para aprovechar solo su instalador, y pnpm cubre esa ventaja sin runtime dual. Reconsiderar Bun — como runtime+PM completo, no como híbrido — solo si: (a) los installs se vuelven cuello real en CI/worktrees (>1-2 min con caché), o (b) el ecosistema agéntico consolida tooling Bun-first, y además (c) la suite pasa 100% en Bun y (d) el APM elegido lo soporta oficialmente.
+
+## Build y ejecución (monorepo TS)
+
+**Decisión.** ESM only (`"type": "module"` en todos los package.json). Los paquetes internos (`shared`, `db`) se consumen como TS source directo (sus `exports` apuntan a `src/`, sin build propio). `apps/api`: desarrollo con `tsx watch`, producción con bundle de `tsup` (esbuild) a un `dist/` único con `node_modules` como externals. `apps/web`: TanStack Start (build sobre Vite; estático en modo SPA, server Nitro solo si un ADR habilita SSR).
+
+**Justificación.** Cero pasos de generación intermedios = cero estados desincronizados que el agente pueda olvidar regenerar (el mismo principio por el que Drizzle ganó a Prisma). El `moduleResolution: bundler` del tsconfig ([04-convenciones-codigo.md](04-convenciones-codigo.md)) exige exactamente este modelo. tsx y tsup son boring, ubicuos y casi sin config.
+
+**Reglas.**
+- Ningún paquete interno tiene script de build; si un cambio en `shared` rompe `api`, lo detecta el `tsc --noEmit` de `pnpm check`, no un paso de compilación.
+- El bundle de producción incluye solo código propio + paquetes workspace; las dependencias externas van instaladas en la imagen (stage de producción del Dockerfile, [08-devops.md](08-devops.md)).
+- `engines.node` fijado a la LTS elegida; misma versión en Dockerfile y CI.
+
+**Umbral de revisión.** Cuando Node estabilice el type-stripping completo (sin flags, con transforms), evaluar eliminar tsx/tsup y ejecutar TS directo (ADR).
 
 ## HTTP framework: Hono
 
 **Decisión.** Hono sobre `@hono/node-server`, con `@hono/zod-validator` en cada endpoint y export OpenAPI (`@hono/zod-openapi`) cuando haya consumidores externos.
 
-**Justificación.** TypeScript-native, API mínima y greppable (agent-friendly), Zod como ciudadano de primera clase y portable entre runtimes (mantiene abierta la opción Bun del umbral de Runtime). El RPC client (`hono/client`) NO se adopta — decisión propia abajo (§Cliente API). Fastify queda como alternativa documentada si un proyecto exige su ecosistema de plugins; Express se descarta para proyectos nuevos.
+**Justificación.** TypeScript-native, API mínima y greppable (agent-friendly), Zod como ciudadano de primera clase y portable entre runtimes. Fastify queda como alternativa documentada si un proyecto exige su ecosistema de plugins; Express se descarta para proyectos nuevos.
 
 **Reglas.**
 - Todo input externo (body, params, query, headers relevantes) se valida con Zod en el boundary del endpoint. Sin excepciones.
-- Contrato compartido: los schemas Zod de request/response viven en `packages/shared` y los importan API y frontend.
 - Sin middlewares mágicos propios: preferir composición explícita visible en el archivo de la ruta.
 
-**Umbral de revisión.** Si un proyecto necesita streaming complejo, plugins maduros (multipart avanzado, rate limiting sofisticado) y Hono obliga a reinventar: evaluar Fastify vía ADR.
+### Contrato API: explícito y sin RPC
 
-## Cliente API: fetch tipado delgado (sin RPC)
+**Decisión.** Los contratos viven en `packages/shared/contracts/` como **route builders explícitos**: por endpoint, método + path + schemas Zod de params/request/response, escritos a mano. El cliente HTTP del frontend es un fetch wrapper tipado genérico (~50-100 líneas) que consume esos contratos. `hono/client` (RPC) NO se usa; tampoco tRPC.
 
-**Decisión.** El frontend consume la API con un helper fetch propio (~30 líneas, `apps/web/src/lib/api.ts`) que recibe la ruta y el schema Zod de respuesta y valida en runtime (`safeParse`). El contrato canónico vive en `packages/shared`: por entidad, schemas de request/response + sus rutas como constantes/builders (`orderRoutes.detail(id)` → `/orders/${id}`). No se adopta `hono/client` (RPC por inferencia) ni ts-rest/equivalentes.
-
-**Justificación.** (a) *Fuente de verdad única:* con RPC, los tipos inferidos del server compiten con los schemas de `shared` como contrato — y divergen justo donde importa: el envelope de error `{ error: { code } }` sale del handler central (la inferencia no lo cubre) y la inferencia no valida la respuesta real en runtime; si el server miente, el tipo no salva. (b) *El feedback loop es el activo crítico:* las cadenas de inferencia de `AppType` degradan `tsc --noEmit` de forma no lineal al crecer la API, y la mitigación oficial (precompilar los tipos del server a `.d.ts`) reintroduce exactamente el paso de generación que este stack eliminó por diseño. (c) *Agent-friendliness:* cuando la inferencia se rompe, el error es un muro de tipos condicionales ilegible — la misma clase de type-level programming que [04-convenciones-codigo.md](04-convenciones-codigo.md) prohíbe escribir a mano, y el mismo problema ya señalado con los `.d.ts` de TanStack Router; el contrato inferido no es greppable, y `fetch` + schema explícito es el patrón dominante en training data.
+**Justificación.** La inferencia profunda del `AppType` del servidor es la misma clase de "magia" que los `.d.ts` complejos: no-greppable e ilegible para LLMs, degrada `tsc --noEmit` de forma no lineal al crecer la API, y además crea **doble fuente de verdad** frente a los schemas de `shared` (el envelope de error del handler central queda fuera de la inferencia, y la inferencia no valida la respuesta real en runtime). El contrato explícito da tipado centralizado y vivo (los tipos se derivan de Zod y cambian con el schema) con razonamiento 100% local: el agente lee el contrato en un archivo y sabe todo del endpoint.
 
 **Reglas.**
-- El contrato de cada entidad es UN artefacto legible en `packages/shared` (schemas + rutas). "¿Qué devuelve `GET /orders`?" se responde leyendo un archivo, no trazando tipos.
-- El frontend jamás construye URLs a mano: siempre los builders de `shared`. Renombrar una ruta = un solo punto de edición.
-- El helper valida toda respuesta con el schema y traduce el envelope de error a un error tipado de cliente.
-- La deriva ruta↔server que el RPC detectaba en compile time la cubren los tests de integración del módulo y el smoke E2E, ya obligatorios ([06-testing.md](06-testing.md)).
-- Esta decisión se extiende a las **server functions** de TanStack Start (`createServerFn`): son RPC por inferencia y **no se usan para datos de dominio** — el data path es siempre el fetch tipado + contrato de `shared`, en cliente y en loaders SSR (ver §Frontend). Reservadas, si acaso, para ocultar un secreto de terceros server-side.
+- Un contrato por endpoint, junto al schema de su entidad; la API lo consume con `@hono/zod-validator` (mismo schema, cero duplicación) y el frontend vía el wrapper tipado.
+- **La ruta Hono se registra DESDE el contrato:** método y path se leen del objeto contrato; el `.routes.ts` solo adjunta el handler. El path existe una sola vez en el repo, y el drift contrato↔ruta queda estructuralmente imposible.
+- **El frontend jamás construye URLs a mano:** siempre consume los builders del contrato. Renombrar una ruta = un solo punto de edición.
+- **Presupuesto duro del fetch wrapper (`client.ts`): ~100 líneas y alcance congelado** — armar la URL desde el contrato, validar la response con el schema y traducir errores al formato de `AppError`. Interceptores, retries, cache o middleware dentro del wrapper son defecto: eso vive en TanStack Query o no vive.
+- Los tests de contrato validan que las responses reales cumplen el schema del contrato ([06-testing.md](06-testing.md)).
+- Export OpenAPI desde los mismos schemas cuando haya consumidores externos.
 
-**Umbral de revisión.** Consumidores externos múltiples o SDK público → OpenAPI (`@hono/zod-openapi`) + cliente generado, vía ADR. Re-evaluar RPC solo si Hono ofreciera inferencia con tipos planos y validación runtime (descartado 2026-07: coherencia de fuente única + coste de inferencia sobre el check).
+**Umbral de revisión.** Si un proyecto necesita streaming complejo, plugins maduros (multipart avanzado, rate limiting sofisticado) y Hono obliga a reinventar: evaluar Fastify vía ADR. Consumidores externos múltiples o SDK público → OpenAPI + cliente generado, vía ADR.
 
-## Frontend: React + TanStack Start + TanStack Query + Zustand
+## Frontend: React + TanStack Start (modo SPA) + TanStack Query + Zustand
 
-**Decisión.** **TanStack Start (v1.0+)** como framework de frontend único, en dos modos según proyecto: **SSR** (default cuando hay superficie pública, SEO o first-paint que importe) o **SPA** (`spa: { enabled: true }`, deploy estático a CDN sin servidor) para herramientas internas sin SEO. Start está construido sobre TanStack Router (mismo file-based routing): no es un segundo stack, es un modelo de rutas en dos modos. TanStack Query para todo estado de servidor; Zustand solo para estado de cliente genuino (UI, preferencias, wizards). **Los datos siempre viajan por el fetch tipado a la API Hono (§Cliente API); las server functions de Start NO se usan para datos de dominio.**
+**Decisión.** TanStack Start como framework único de frontend, operado en **modo SPA por defecto**. SSR/streaming/server functions se habilitan por proyecto vía ADR cuando exista requisito real (SEO, contenido público, TTFB). TanStack Query para todo estado de servidor; Zustand solo para estado de cliente genuino (UI, preferencias, wizards).
 
-**Justificación.** Start llegó a v1.0 estable (mar-2026) con SSR y streaming en GA; el modo SPA es una configuración soportada que deploya 100% estático (shell prerenderizado + CDN). Unificar en un solo framework elimina el coste de "dos modelos mentales" —el que más degrada el código de agentes en frontend— y, como Start es Router por debajo, un proyecto puede activar SSR por-ruta sin migración. RSC es opt-in y experimental (abr-2026) y ortogonal a la necesidad real, que es SSR, no RSC: se ignora hasta que deje de ser experimental. La separación Query/Zustand elimina la ambigüedad número uno del frontend agéntico: duplicar estado de servidor en stores. (Evolución 2026-07: revierte el "TanStack Start no se adopta todavía" de v1.2–1.3, cuando Start estaba en RC; el umbral de adopción que fijaba ese doc —v1.0 + SSR real— se cumplió, con 3 de los 5 próximos proyectos exigiendo SSR.)
+**Justificación.** Un solo framework, dos mundos: la decisión SPA vs SSR deja de ser una decisión de stack (con migración) y pasa a ser configuración por proyecto. Start v1.0 (marzo 2026) es estable y por debajo es el mismo TanStack Router: en modo SPA el runtime es esencialmente Router + Vite con setup estandarizado — riesgo incremental bajo. RSC sigue pendiente y Thoughtworks lo mantiene en Assess: por eso el default conservador es SPA. La separación Query/Zustand elimina la ambigüedad número uno que degrada el código de agentes en frontend: duplicar estado de servidor en stores.
 
 **Reglas.**
-- **Server functions (`createServerFn`) NO se usan para datos de dominio.** Son RPC por inferencia —la misma magia que rechaza §Cliente API—: el data path es siempre el fetch tipado + contrato de `packages/shared`. Reservadas, si acaso, para ocultar un secreto de terceros server-side; nunca para la app.
-- **Selección de modo (default + trigger, sin decisión ad hoc del agente):** SSR por defecto si el proyecto tiene superficie pública indexable o el first-paint/SEO importa; SPA (`spa: { enabled: true }`) para tools internos sin SEO. El modo elegido se fija en el CLAUDE.md del proyecto.
+- Modo SPA es el default de todo proyecto nuevo; habilitar SSR/server functions requiere ADR con el requisito que lo justifica. El modo elegido se fija en el CLAUDE.md del proyecto.
+- **Las server functions NO son un segundo backend.** La lógica de negocio y el acceso a datos viven en la API Hono ([02-arquitectura.md](02-arquitectura.md)). Regla dura: si una server function toca la base de datos o contiene reglas de negocio, es defecto. Se permiten solo como glue de presentación (cookies, proxy trivial) y con ADR — son RPC por inferencia, la misma magia que rechaza §Contrato API.
 - **SSR-safe desde el día uno:** cero globals de browser (`window`, `document`, `localStorage`) en scope de módulo; así SPA↔SSR es un flip de config, no un refactor.
-- **En SSR el loader corre en server:** el fetch a Hono usa base URL isomórfica (interna en server, relativa en cliente) y **forwardea la cookie de sesión** del request entrante para que better-auth valide server-side.
-- **Prohibido** guardar datos de servidor en Zustand: si viene de la API, vive en TanStack Query (cache, invalidación, loaders). Stores pequeños por dominio de UI, con selectores; nunca un store global monolítico.
+- **Si un ADR habilita SSR:** el loader corre en server — el fetch a Hono usa base URL isomórfica (interna en server, relativa en cliente) y **forwardea la cookie de sesión** del request entrante para que better-auth valide server-side.
+- **Prohibido** guardar datos de servidor en Zustand. Si viene de la API, vive en TanStack Query (cache, invalidación, loaders).
+- **Escalera de estado de cliente:** `useState` local primero; URL/search params (tipados por el Router) para estado compartible; Zustand solo cuando el estado cruza rutas o componentes lejanos. Un store nuevo exige justificación en el PR — "por consistencia" no lo es. Stores pequeños con selectores; nunca un store global monolítico.
 - Loaders hacen prefetch vía Query; los componentes consumen con `useQuery`/`useSuspenseQuery`.
-- Nota para el harness: los `.d.ts` de TanStack Router/Start son ilegibles para LLMs. El agente no "lee" los tipos generados; las convenciones de rutas se documentan en CLAUDE.md con ejemplos concretos.
+- Nota para el harness: los `.d.ts` de TanStack son ilegibles para LLMs. El agente no debe intentar "leer" los tipos generados; las convenciones de rutas se documentan en CLAUDE.md con ejemplos concretos.
 
-**Umbral de revisión.** RSC: adoptar cuando deje de ser experimental y haya necesidad real (hoy no se usa; el data path por fetch tipado no lo requiere). Framework: reconsiderar solo si Start estanca mantenimiento o rompe compatibilidad hacia atrás de forma recurrente; Next.js queda como alternativa documentada vía ADR si un cliente ya lo impone.
+**Umbral de revisión (tripwire explícito).** Volver a Router + Vite —degradación de bajo costo, es el mismo router— sin debate si se cumple cualquiera de estos: (a) 2 incidentes de breaking config entre minors de Start, o (b) más de un día perdido en tooling de Start dentro de un mismo proyecto. Se evalúa al cierre de cada proyecto. Adoptar SSR como default solo cuando RSC esté shipeado y un proyecto lo haya validado en producción.
 
-## UI: Tailwind CSS v4 + shadcn/ui
+## UI y formularios: Shadcn UI + Tailwind CSS v4
 
-**Decisión.** Tailwind CSS v4 como único sistema de estilos. shadcn/ui como base del design system: los componentes se instalan copiándose al repo (`components/ui/`) y desde ese momento son código propio del proyecto. Sin CSS-in-JS runtime, sin styled-components, sin archivos CSS por componente (solo el CSS global de tokens).
+**Decisión.** Tailwind CSS v4 + Shadcn UI (sobre Radix) como capa de UI; `lucide-react` como set único de iconos; React Hook Form + `zodResolver` para formularios, reutilizando los schemas de `packages/shared` (validación isomórfica: las mismas reglas en cliente y servidor).
 
-**Justificación.** Es el combo con máxima representación en training data del frontend actual: los agentes lo generan con mínima tasa de error. Los estilos colocalizados en el markup preservan local reasoning y greppability (la clase describe el estilo donde se usa, sin saltar a otro archivo). shadcn/ui da ownership total: el agente lee y modifica el componente como código del proyecto, en vez de luchar contra la API opaca de una librería.
+**Justificación.** Shadcn no es una dependencia: el código de cada componente se descarga al repo (`components/ui/`), es editable y greppable — el modelo de ownership ideal para agentes, y de las combinaciones mejor representadas en training data. Radix aporta la accesibilidad. La validación isomórfica elimina la deriva entre reglas de formulario y reglas de API.
 
 **Reglas.**
+- Componentes base se agregan con el CLI de Shadcn a `components/ui/` y se personalizan ahí; sin wrappers genéricos encima. No existe "actualizar shadcn" (es copia, no dependencia).
 - Design tokens (colores semánticos, radios, spacing especial) solo en `@theme`/CSS variables del CSS global; prohibido hardcodear hex/px mágicos en componentes.
-- Los componentes shadcn instalados vía CLI se editan como código propio; no existe "actualizar shadcn" (es copia, no dependencia).
-- `@apply` solo en el CSS global de base; en componentes, las utilidades viven en el markup.
-- El orden de clases no es tema de review: lo fija el tooling (regla de ordenado de Biome cuando esté estable) o se ignora.
+- Prohibido: Material UI, Chakra, CSS-in-JS, archivos `.css` manuales (fuera de los globals de Tailwind), heroicons/font-awesome.
+- Formularios siempre con RHF + `zodResolver` sobre schema de `shared` (derivado con `.pick`/`.omit`/`.extend`, nunca duplicado); sin validación manual en handlers. Errores de servidor se mapean al form usando el `code` estable del contrato.
 
-**Umbral de revisión.** Si el cliente impone un design system corporativo propio: ADR con estrategia de integración (tokens + wrappers).
+**Umbral de revisión.** Si el cliente impone un design system corporativo propio: ADR con estrategia de integración (tokens + wrappers). TanStack Form: cuando su adopción/representación en training data alcance a react-hook-form (evaluar al arrancar cada proyecto).
 
-## Formularios: react-hook-form + Zod
+## Reactividad: short-polling exclusivo
 
-**Decisión.** react-hook-form con resolver de Zod (`@hookform/resolvers`) para todo formulario con validación o más de 2-3 campos. Inputs sueltos simples: `useState` y ya.
+**Decisión.** Toda la reactividad se resuelve con `refetchInterval` de TanStack Query (short-polling). WebSockets, SSE (`EventSource`) y cualquier conexión HTTP persistente quedan prohibidos por defecto.
 
-**Justificación.** Estándar de facto con máxima representación en training data (principio boring technology). Cierra el círculo del contrato único: el mismo schema Zod de `packages/shared` valida el form en el cliente y el body en el endpoint — una sola fuente de verdad de validación.
+**Justificación.** Para backoffice/SaaS de negocio, el polling es la solución boring: sin estado de conexión, sin fricciones con reverse proxies ni límites de navegador, sin infraestructura extra, y trivial de razonar para el agente. Las respuestas HTTP en streaming/chunked (p. ej. texto largo generado por IA) están permitidas: son requests estándar, no suscripciones persistentes.
 
 **Reglas.**
-- El schema del form se deriva del schema de contrato (`.pick`/`.omit`/`.extend`), nunca se duplica.
-- Errores de servidor se mapean al form usando el `code` estable del contrato de errores.
+- **Polling rápido (≈5s, condicional):** al observar un recurso cuyo estado cambia activamente; se detiene al llegar a estado final (`refetchInterval` como función que devuelve `false`).
+- **Polling lento (15-30s, global):** notificaciones del sistema; se monta una sola vez en el layout raíz.
+- Todo recurso pollable expone un campo de estado con valores finales claros: el frontend decide el intervalo sin heurísticas.
 
-**Umbral de revisión.** TanStack Form cuando su adopción/representación en training data alcance a react-hook-form (evaluar al arrancar cada proyecto).
+**Umbral de revisión.** Tiempo real persistente solo vía ADR ante requisito genuino de latencia sub-segundo (colaboración en vivo, chat operativo).
+
+## Jobs en background: pg-boss
+
+**Decisión.** pg-boss como cola de trabajos transaccional sobre el mismo Postgres, corriendo en el mismo proceso Node que la API (monolito modular: separación lógica de carpetas, no de procesos). Sin SQS/RabbitMQ/Kafka de entrada.
+
+**Justificación.** Un solo servicio de estado (Postgres = datos + cola + sesiones) significa un solo backup, una sola pieza que operar y cero infraestructura extra por instancia. Reintentos, backoff exponencial y dead-letter vienen resueltos. Los jobs típicos son I/O bound (LLM, APIs externas, archivos): no bloquean el event loop de la API.
+
+**Reglas.**
+- Config base (defaults del paquete, ajustables por proyecto): `retryLimit: 3`, `retryBackoff: true`, `expireInHours: 1`, `archiveCompletedAfterSeconds: 86400`, `deleteAfterDays: 14`.
+- **Todo payload extiende `baseJobPayloadSchema`** (vive en `packages/shared`), que hace obligatorio `correlationId`; el handler valida el payload con su schema antes de procesar.
+- **Idempotencia obligatoria:** versionado del recurso (UUID de versión que viaja en el payload y se verifica en el `WHERE` del UPDATE) y `singletonKey` para evitar duplicados en cola.
+- Los handlers viven en el módulo dueño del dominio (`<modulo>.jobs.ts`) y se registran en `main.ts`; el handler valida y delega al service, no reimplementa lógica.
+- Transaccionalidad: `boss.send()` no participa automáticamente en `db.transaction` de Drizzle (pools separados). Patrón por defecto: escribir → encolar → compensar si el encolado falla; si un módulo usa otra estrategia, se documenta en su README.
+- Todo endpoint que encole jobs o dispare costo (LLM) lleva rate limiting ([07-seguridad-config.md](07-seguridad-config.md)).
+
+**Umbral de revisión.** Cola externa solo con evidencia medida de escala que pg-boss no cubra (throughput sostenido alto, consumers en varios lenguajes) — vía ADR y entrada previa en el roadmap-parking ([14-roadmap-parking.md](14-roadmap-parking.md)).
 
 ## Validación: Zod v4
 
@@ -128,12 +161,13 @@ Decisiones cerradas. Formato por componente: **Decisión → Justificación → 
 - Schemas como fuente de verdad: los tipos se derivan (`z.infer`), nunca se duplican a mano.
 - Un schema por entidad de dominio en `packages/shared`, con variantes derivadas (`.pick`, `.omit`, `.extend`) para create/update/response.
 - `safeParse` en boundaries (no lanzar desde validación); parse duro solo en código interno donde un fallo es bug.
+- Reglas anti-error v3→v4 para el agente: [04-convenciones-codigo.md](04-convenciones-codigo.md) §Zod v4.
 
 **Umbral de revisión.** Solo si Zod estanca desarrollo o una alternativa alcanza dominancia clara de ecosistema.
 
 ## ORM: Drizzle + PostgreSQL
 
-**Decisión.** Drizzle sobre driver estándar de Postgres. PostgreSQL 16+ gestionado (RDS en AWS / Base Database u OCI PostgreSQL en OCI). Detalle operativo completo en [05-datos.md](05-datos.md).
+**Decisión.** Drizzle sobre driver estándar de Postgres. PostgreSQL 16+: gestionado (RDS / OCI PostgreSQL) en el perfil cloud, o contenedor con backups externos en el perfil VPS ([08-devops.md](08-devops.md)). Detalle operativo completo en [05-datos.md](05-datos.md).
 
 **Justificación.** TypeScript-native sin paso de generación (el failure mode clásico de Prisma con agentes: olvidar `prisma generate`), schema greppable y local, respaldo full-time del core team (PlanetScale). Postgres: boring technology, máxima representación en training data, cero riesgo.
 
@@ -147,6 +181,8 @@ Decisiones cerradas. Formato por componente: **Decisión → Justificación → 
 
 **Reglas.** Autorización siempre en servidor, por módulo (ver [02-arquitectura.md](02-arquitectura.md)); el frontend solo oculta UI, nunca es el enforcement.
 
+**Umbral de revisión.** better-auth es el componente más joven después de Start, pero la puerta de salida está diseñada: sesiones y usuarios viven en tu Postgres vía Drizzle, sin SaaS. Si el proyecto se estanca (cadencia de releases, respuesta a vulnerabilidades), se migra de librería vía ADR; los datos no se mueven.
+
 ## Tooling: Biome + tsc como gates
 
 **Decisión.** Biome como formatter + linter único. `tsc --noEmit` como gate de tipos separado. Ambos en pre-commit (rápido) y CI (bloqueante).
@@ -158,19 +194,6 @@ Decisiones cerradas. Formato por componente: **Decisión → Justificación → 
 - El agente ejecuta `pnpm check` (Biome + tsc) como paso final de toda tarea; en el harness, un hook PostToolUse puede automatizarlo.
 - Excepción documentada: si un cliente impone ESLint, se adopta flat config con typescript-eslint y se registra ADR.
 
-## Build y ejecución (monorepo TS)
-
-**Decisión.** ESM only (`"type": "module"` en todos los package.json). Los paquetes internos (`shared`, `db`) se consumen como TS source directo (sus `exports` apuntan a `src/`, sin build propio). `apps/api`: desarrollo con `tsx watch`, producción con bundle de `tsup` (esbuild) a un `dist/` único con `node_modules` como externals. `apps/web`: TanStack Start (build sobre Vite; server SSR con Nitro, o estático en modo SPA).
-
-**Justificación.** Cero pasos de generación intermedios = cero estados desincronizados que el agente pueda olvidar regenerar (el mismo principio por el que Drizzle ganó a Prisma). El `moduleResolution: bundler` del tsconfig ([04-convenciones-codigo.md](04-convenciones-codigo.md)) exige exactamente este modelo. tsx y tsup son boring, ubicuos y casi sin config.
-
-**Reglas.**
-- Ningún paquete interno tiene script de build; si un cambio en `shared` rompe `api`, lo detecta el `tsc --noEmit` de `pnpm check`, no un paso de compilación.
-- El bundle de producción incluye solo código propio + paquetes workspace; las dependencias externas van instaladas en la imagen (stage de producción del Dockerfile, [08-devops.md](08-devops.md)).
-- `engines.node` fijado a la LTS elegida; misma versión en Dockerfile y CI.
-
-**Umbral de revisión.** Cuando Node estabilice el type-stripping completo (sin flags, con transforms), evaluar eliminar tsx/tsup y ejecutar TS directo (ADR).
-
 ## Observabilidad: pino + OpenTelemetry (opcional por proyecto)
 
 **Decisión.** pino con logs JSON estructurados desde el día uno. OTel/APM se activa por proyecto según SLA del cliente. Sentry (o equivalente) para error tracking de frontend y backend.
@@ -179,11 +202,12 @@ Decisiones cerradas. Formato por componente: **Decisión → Justificación → 
 
 ## Qué queda explícitamente fuera del stack default
 
-- **Microservicios / colas distribuidas de entrada.** Monolito modular ([02-arquitectura.md](02-arquitectura.md)). Un job runner in-process o `pg`-based (p. ej. pg-boss) cubre background jobs hasta que la escala demuestre lo contrario.
-- **GraphQL.** REST + contrato tipado en `shared` (schemas + rutas) cubre los casos; GraphQL solo si el cliente lo exige (ADR).
+- **Microservicios / colas distribuidas (SQS, RabbitMQ, Kafka) de entrada.** Monolito modular ([02-arquitectura.md](02-arquitectura.md)) + pg-boss cubren background jobs; cola externa solo con evidencia de escala (ADR).
+- **WebSockets / SSE.** Short-polling es la decisión de reactividad de este documento; tiempo real persistente solo vía ADR.
+- **GraphQL.** REST + contratos tipados en `shared` cubre los casos; GraphQL solo si el cliente lo exige (ADR).
 - **Redis de entrada.** Postgres cubre cache ligera, jobs y locks al inicio (`UNLOGGED` tables, advisory locks). Redis entra cuando haya evidencia de necesidad.
-- **Turborepo/Nx de entrada.** Workspaces + scripts hasta que el build supere ~2-3 min o haya >4 paquetes con grafo real de dependencias.
+- **Turborepo/Nx de entrada.** pnpm workspaces + scripts hasta que el build supere ~2-3 min o haya >4 paquetes con grafo real de dependencias.
+- **RPC (hono/client, tRPC).** Sustituido por contratos explícitos en `shared` (decisión de este documento); no reevaluar salvo que el patrón de contratos demuestre un costo de mantenimiento real.
 - **i18n.** Una sola lengua por proyecto como default (la del cliente); librería de i18n solo si el proyecto lo exige (ADR).
-- **Realtime.** Polling con TanStack Query cubre el inicio; SSE sobre streaming de Hono si hay necesidad real; WebSockets dedicados = ADR.
 - **Feature flags.** Config por entorno al inicio; servicio dedicado solo con evidencia (ADR).
 - **Capa de IA en el producto.** Si el proyecto tiene features de IA: SDK oficial del proveedor (Anthropic por defecto) y decisión por proyecto vía ADR; el stack default no la presume. pgvector: ver [05-datos.md](05-datos.md).

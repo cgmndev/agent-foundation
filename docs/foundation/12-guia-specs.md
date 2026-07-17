@@ -1,7 +1,7 @@
 ---
 doc: guia-specs
-version: 1.1
-fecha: 2026-07-06
+version: 1.5
+fecha: 2026-07-16
 estado: vigente
 tipo: capa-durable
 ---
@@ -94,8 +94,8 @@ ACs de verificación manual (raros, ej. "el cliente valida visualmente el diseñ
 | Paso | Quién | Qué ocurre |
 |---|---|---|
 | 1. Origen | Tú + cliente | La necesidad nace (reunión, nota en Obsidian, mensaje). Si madura, se destila del vault al repo |
-| 2. `/new-spec` | Tú + agente | El skill crea la carpeta y el `spec.md` en `draft` desde plantilla. El agente entrevista: contexto, objetivo, alcance, ACs. Tú editas y cierras preguntas abiertas |
-| 3. Aprobación | Cliente (si aplica) | La spec en lenguaje de negocio se revisa con el cliente. Al aprobar: `status: active`, se calcula `source_hash` |
+| 2. `/new-spec` | Tú + agente | El skill crea la carpeta y el `spec.md` en `draft` desde plantilla. El agente entrevista (grilling): contexto, objetivo, alcance, ACs. Tú editas y cierras preguntas abiertas |
+| 3. Aprobación (gate por modo) | Según ADR 0001 | **Consultoría:** la spec en lenguaje de negocio se revisa con el aprobador nombrado; aprobación escrita por el canal declarado. **Producto propio:** separación temporal — sesión distinta, mínimo una noche, y las 3 preguntas de la Decisión 9 respondidas por escrito en la spec. Solo entonces: `status: active`, se calcula `source_hash` |
 | 4. Plan | Agente + tú | El agente genera `plan.md` desde la spec + `docs/architecture.md` + ADRs. Tú revisas los trade-offs — este es el review de mayor valor de todo el ciclo |
 | 5. Tasks | Agente | Genera `tasks.md` desde el plan. Revisión rápida de orden y granularidad |
 | 6. Implementación | Agente(s) | Ejecuta tasks marcando checkboxes. Los tests de ACs se escriben ANTES o JUNTO a cada task que los satisface, nunca al final |
@@ -145,14 +145,16 @@ Implementados como skills del plugin `agent-foundation` (`skills/<nombre>/SKILL.
 ### `/new-spec <slug>`
 1. Validar que no existe `specs/active/*-<slug>`.
 2. Crear carpeta `specs/active/AAAA-MM-<slug>/` con `spec.md` desde plantilla (`status: draft`, fecha, autor).
-3. Entrevistar al usuario sección por sección (contexto → objetivo → alcance → ACs → restricciones). No inventar contenido: preguntar.
-4. Al terminar, listar las preguntas abiertas restantes y recordar que la spec no puede pasar a `active` con preguntas abiertas.
-5. NO crear plan.md ni tasks.md (eso ocurre tras la aprobación).
+3. Entrevistar al usuario sección por sección (contexto → objetivo → alcance → ACs → restricciones). **Reglas del grilling:** una pregunta a la vez, explicando en el prompt por qué se pregunta; **facts vs decisions** — los hechos se descubren explorando el código/repo (no se preguntan), las decisiones solo las toma el usuario (sí se preguntan). No inventar contenido.
+4. **Confirmation gate:** antes de volcar contenido a los artefactos, resumir el entendimiento (objetivo, alcance, ACs) y esperar confirmación explícita del usuario. No se generan artefactos ni se implementa sin entendimiento compartido confirmado.
+5. Al terminar, listar las preguntas abiertas restantes y recordar que la spec no puede pasar a `active` con preguntas abiertas — y, en modo producto propio, que la activación es en OTRA sesión (Decisión 9).
+6. NO crear plan.md ni tasks.md (eso ocurre tras la aprobación).
 
 ### `/activate-spec <slug>` (o paso manual)
 1. Verificar sección "Preguntas abiertas" vacía.
-2. `status: active`, calcular y escribir `source_hash`.
-3. Ofrecer generar `plan.md` (requiere leer `docs/architecture.md` + ADRs relevantes antes de proponer enfoque).
+2. **Verificar el gate del modo** (ADR 0001): consultoría → confirmación de que existe aprobación escrita del aprobador nombrado; producto propio → separación temporal (la spec no se creó en esta misma sesión/día) y las 3 preguntas de la Decisión 9 respondidas por escrito en la spec. Si falta algo, parar y decirlo.
+3. `status: active`, calcular y escribir `source_hash`.
+4. Ofrecer generar `plan.md` (requiere leer `docs/architecture.md` + ADRs relevantes antes de proponer enfoque).
 
 ### `/change-spec <slug>`
 1. Ejecutar el árbol de §5 preguntando al usuario qué ACs afecta el cambio.

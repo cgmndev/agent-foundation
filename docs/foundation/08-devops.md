@@ -1,7 +1,7 @@
 ---
 doc: devops
-version: 1.2
-fecha: 2026-07-06
+version: 1.5
+fecha: 2026-07-16
 estado: vigente
 tipo: capa-durable
 ---
@@ -19,12 +19,36 @@ Pipeline y operación estándar. Objetivo: deploy aburrido, reproducible y con e
 | production | Cliente | Reales, acceso restringido |
 
 - Paridad: misma imagen Docker en staging y production; solo cambian env vars/secrets.
-- Staging es obligatorio en proyectos de cliente; los demos NUNCA contra production.
+- Staging es obligatorio en proyectos de cliente; los demos NUNCA contra production. (En el Perfil B, staging = instancia "demo" propia en el mismo Coolify.)
+
+## Dos perfiles de despliegue (decisión de kickoff)
+
+**El Perfil B (VPS + Coolify) es el default de la práctica**, alineado con el modelo de negocio (instancias dedicadas por cliente, costo por instancia como driver, operación de 1-3 personas): un solo flujo operativo que se domina a fondo. El Perfil A es la excepción documentada y se activa solo con gatillo explícito: cliente ya en AWS/OCI, requisito de compliance, o SLA formal que exija servicios gestionados. La elección se registra como ADR-000 junto al modelo de tenancy (multi-tenant vs instancia dedicada single-tenant):
+
+| | **Perfil A — Cloud gestionado** | **Perfil B — VPS + Coolify (single-tenant)** |
+|---|---|---|
+| Cuándo | SLA formal, escala variable, cliente ya en AWS/OCI, compliance | Instancias dedicadas por cliente, costo por instancia como driver, operación 1-3 personas |
+| Cómputo | ECS Fargate / OCI Container Instances | VPS (Hetzner/DO/EC2) con Coolify (panel + engine) |
+| Postgres | RDS / OCI Database gestionado | Contenedor en el compose, **sin `ports:` al host** |
+| CD | Pipeline: staging → aprobación → prod | Webhook de Coolify: merge a `main` → build → rolling update |
+| Migraciones | Job del pipeline, previo al deploy | Al arranque del contenedor, antes de que `/health` responda |
+| Secrets | Secrets Manager / OCI Vault | Panel de Coolify (nunca en repo) |
+| TLS / routing | ALB + ACM | Traefik/Caddy de Coolify (Let's Encrypt automático) |
+| Backups | Snapshots del servicio gestionado | Contenedor `pg-backup` (pg_dump programado) → bucket externo |
+
+### Reglas del Perfil B
+
+- **Rolling update con gate de healthcheck:** el contenedor nuevo se levanta en paralelo; `/health` hace deep check (SELECT 1 a Postgres); solo con 200 el proxy redirige tráfico y el viejo recibe SIGTERM. Si falla, el nuevo se destruye y el viejo sigue sirviendo: rollback automático, deploy invisible.
+- **Migraciones on-boot exigen backward-compatibility estricta:** durante el rolling update el contenedor viejo corre contra el schema ya migrado. Aquí expand-and-contract no es recomendación, es obligatorio (agregar columnas con DEFAULT es seguro; renombrar/eliminar es siempre dos deploys).
+- **Backups fuera del VPS, sin excepción:** `pg-backup` sube dumps a un bucket S3-compatible externo (otra región u otro proveedor). Retención: 7 diarios / 4 semanales / 12 mensuales, con restore verificado. El bucket de backups jamás comparte punto de fallo físico con la app.
+- **Postgres solo en red interna de Docker:** un compose con `ports:` en el servicio de base de datos se rechaza en review (regla también para el agente).
+- Sentry con un DSN por instancia (aísla errores por cliente); los logs pino a stdout se consultan en Coolify buscando por `correlationId`.
+- El mismo código y compose deben poder migrar una instancia del Perfil B al A si el cliente crece: la portabilidad es requisito de diseño, no accidente.
 
 ## Build y contenedor
 
-- **Docker multi-stage:** ambas stages sobre `node:<LTS>-slim` (una sola familia de imagen). Stage de build: `corepack enable` + `pnpm install --frozen-lockfile` + build; stage final copia `dist/` + dependencias de producción del workspace desplegado (`pnpm deploy --prod`). Usuario non-root, `NODE_ENV=production`.
-- El frontend se sirve como estáticos (S3+CloudFront / OCI Object Storage+CDN) o desde el propio contenedor vía Hono `serveStatic` en proyectos pequeños — decisión por proyecto, default: estáticos en CDN.
+- **Docker multi-stage:** una sola familia de imágenes `node:<LTS>-slim`. Stage de build: pnpm instalado explícitamente con versión pinneada (sin corepack) + `pnpm install --frozen-lockfile` (con cache del store montada) + build; stage final: solo `dist/` + dependencias de producción (`pnpm deploy --prod` o prune). Usuario non-root, `NODE_ENV=production`.
+- El frontend en modo SPA (default) se sirve como estáticos (S3+CloudFront / OCI Object Storage+CDN) o desde el propio contenedor vía Hono `serveStatic` en proyectos pequeños — default: estáticos en CDN. Si un proyecto habilita SSR con TanStack Start (ADR), la web se despliega como segundo contenedor Node por el mismo pipeline.
 - Imagen etiquetada con SHA de commit; `latest` no existe en producción.
 - Healthcheck: endpoint `GET /health` (liveness: proceso vivo) y `GET /ready` (readiness: DB alcanzable) desde el día uno.
 - Graceful shutdown: manejar `SIGTERM` (cerrar server, drenar pool de DB) en `main.ts`.
@@ -44,12 +68,12 @@ pipeline PR completo → build imagen → push registry → deploy a staging →
 ```
 
 **Reglas:**
-- Las migraciones las ejecuta el pipeline como paso previo al deploy de la app (job dedicado), nunca la app al arrancar ni un humano/agente a mano.
+- Migraciones según perfil: en A las ejecuta el pipeline como job previo al deploy; en B se ejecutan al arranque del contenedor antes de responder `/health`. En ambos: expand-and-contract, nunca a mano, nunca por el agente.
 - Deploy a production con aprobación manual (environment protection) mientras el equipo sea pequeño; automatizar solo con suite E2E madura.
 - Rollback = redeploy de la imagen anterior (por eso las migraciones son expand-and-contract: la imagen N-1 debe funcionar con el schema N).
 - El agente puede editar workflows en PR, pero no tiene credenciales de deploy (separación harness: rol DEVOPS).
 
-## Infraestructura (AWS / OCI)
+## Infraestructura — Perfil A (cloud gestionado, AWS / OCI)
 
 **Default AWS (proyecto tipo):** ECS Fargate (1-2 tasks) + ALB, RDS PostgreSQL (single-AZ para MVP, multi-AZ al pasar a crítico), S3+CloudFront para frontend, Secrets Manager, ECR.
 
@@ -62,8 +86,8 @@ pipeline PR completo → build imagen → push registry → deploy a staging →
 
 ## Observabilidad
 
-- **Logs:** pino JSON a stdout → CloudWatch / OCI Logging. Campos estándar en todo log: `level`, `time`, `module`, `requestId`, `userId` (si hay sesión). Middleware de request logging con duración y status.
-- **`requestId` end-to-end:** generado en el edge/middleware, propagado en headers y logs; es la herramienta número uno de debugging distribuido barato.
+- **Logs:** pino JSON a stdout → CloudWatch / OCI Logging (Perfil A) o logs de contenedor en Coolify (Perfil B). Campos estándar en todo log: `level`, `time`, `module`, `correlationId`, `userId` (si hay sesión). Middleware de request logging con duración y status.
+- **`correlationId` end-to-end:** el middleware lo respeta si llega en `x-correlation-id` o genera uno nuevo; se propaga en el header de respuesta, en todos los logs (`logger.child`) y en todo payload de pg-boss (obligatorio vía `baseJobPayloadSchema`). Un solo ID traza request → job → llamada externa: la herramienta número uno de debugging barato.
 - **Errores:** Sentry (backend + frontend) con release = SHA. Alertas: error rate y nuevos issues a canal del proyecto.
 - **Métricas/APM:** OTel + backend del proveedor solo cuando el SLA del cliente lo pida (ADR); para MVPs, logs estructurados + Sentry + métricas del ALB/RDS bastan.
 - **Alertas mínimas de infra:** CPU/memoria del servicio, conexiones y storage de RDS, 5xx rate del ALB. Pocas y accionables; una alerta que se ignora dos veces se elimina o se arregla.
