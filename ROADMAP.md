@@ -11,7 +11,7 @@ Trabajo abierto del repo, en orden. El punto 1 **descongela el resto** (ver la r
 
 ## Excepción documentada al freeze (2026-07-16 — CERRADA)
 
-Paquete pre-validación aprobado tras el contraste con el main flow de mattpocock/skills (análisis `ANALISIS-vs-pocock.md` en el vault). Criterio de entrada: solo doctrina ya escrita (09 §Flujo estándar) que la validación ejercita sí o sí, más el argumento de snapshot (lo que no entre a la suite antes del primer `/init-project`, la validación no lo prueba nunca). Entró:
+Paquete pre-validación aprobado tras el contraste con el main flow de mattpocock/skills (análisis efímero de jul-2026, descartado tras absorber sus conclusiones). Criterio de entrada: solo doctrina ya escrita (09 §Flujo estándar) que la validación ejercita sí o sí, más el argumento de snapshot (lo que no entre a la suite antes del primer `/init-project`, la validación no lo prueba nunca). Entró:
 
 1. `plantilla-tasks`: dimensionamiento explícito — una fase ≈ una sesión (smart zone).
 2. `/new-spec`: destilación de discusión previa + propuesta de diff de hechos durables al cerrar el grilling.
