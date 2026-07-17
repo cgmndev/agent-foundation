@@ -19,3 +19,22 @@ Trabajo abierto del repo, en orden. El punto 1 **descongela el resto** (ver la r
    server-side; evaluar una nota de deploy SSR en `08-devops`. La regla ya vive en `01-stack`
    §Frontend y en el checklist día-cero; falta la validación real. No usar server functions de
    Start para datos de dominio.
+
+## Excepción documentada al freeze (2026-07-16 — CERRADA)
+
+Paquete pre-validación aprobado tras el contraste con el main flow de mattpocock/skills
+(análisis `ANALISIS-vs-pocock.md` en el vault). Criterio de entrada: solo doctrina ya
+escrita (09 §Flujo estándar) que la validación ejercita sí o sí, más el argumento de
+snapshot (lo que no entre a la suite antes del primer `/init-project`, la validación no
+lo prueba nunca). Entró:
+
+1. `plantilla-tasks`: dimensionamiento explícito — una fase ≈ una sesión (smart zone).
+2. `/new-spec`: destilación de discusión previa + propuesta de diff de hechos durables
+   al cerrar el grilling.
+3. Skill nuevo **`/implement-task`** (mínimo, **EN OBSERVACIÓN**: la señal "fricción por
+   sesión de implementación" de `11-sistema-specs` §Checkpoint decide en C1-C6 si se
+   consolida, crece o se elimina).
+4. Este registro. Suite v1.5→v1.6 · plugin 0.4.1→0.5.0.
+
+La excepción queda **cerrada**: lo próximo que entre debe venir de fricción real de uso,
+no de más análisis.

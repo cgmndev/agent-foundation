@@ -28,8 +28,8 @@ Maquinaria centralizada (se actualiza vía plugin) · decisiones snapshoteadas p
 
 ## Estado
 
-- Suite v1.5 (2026-07-16, reconciliada con la línea del vault: cosecha ProjectAI + dual-mode) · Harness v0.4.1 · batería de pruebas en verde (47/47).
-- **Congelado en features** hasta la validación real (primera feature de un proyecto real por el ciclo completo, checkpoint C1-C6). Solo entran fixes de fricción real.
+- Suite v1.6 (2026-07-16, paquete pre-validación: fases por sesión, destilación en /new-spec, /implement-task en observación) · Harness v0.5.0 · batería de pruebas en verde (47/47).
+- **Congelado en features** hasta la validación real (primera feature de un proyecto real por el ciclo completo, checkpoint C1-C6). Solo entran fixes de fricción real. (Única excepción: el paquete pre-validación 2026-07-16, documentado y cerrado en `ROADMAP.md`.)
 
 ## Pendiente
 

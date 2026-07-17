@@ -1,6 +1,6 @@
 ---
 doc: indice
-version: 1.5
+version: 1.6
 fecha: 2026-07-16
 estado: vigente
 tipo: capa-durable
@@ -67,6 +67,7 @@ Esta suite sintetiza tres investigaciones (05-jul-2026): (a) panorama de stacks 
 
 ## Historial
 
+- **1.6 (2026-07-16) — Paquete pre-validación (excepción documentada y cerrada al freeze; registro en ROADMAP del repo).** Origen: contraste con el main flow de mattpocock/skills (`ANALISIS-vs-pocock.md`, vault). Criterio de entrada: solo doctrina ya escrita que la validación ejercita sí o sí — nada requirió diseño especulativo. Cambios: `plantilla-tasks` dimensiona fases por sesión (una fase ≈ una sesión, smart zone); `/new-spec` gana destilación de discusión previa y propuesta de diff de hechos durables al cerrar el grilling; skill nuevo **`/implement-task`** (mínimo, EN OBSERVACIÓN — contrato en 12-guia §7; la señal nueva del checkpoint en 11 decide si se consolida, crece o se elimina); cuarta señal de registro de la validación en 11 (fricción por sesión de implementación). Plugin 0.4.1→0.5.0. El freeze sigue vigente.
 - **1.5 (2026-07-16) — Reconciliación de líneas divergentes.** La suite del repo (1.x por doc, 07-06) y la copia del vault (v1.3 suite-wide, 07-14, "cosecha de ProjectAI") habían evolucionado en paralelo. Esta versión las fusiona con criterio "decisión más nueva gana; contenido único se preserva": del vault entran el Perfil B (VPS+Coolify) como default con doble perfil de despliegue, modo SPA como default de TanStack Start (con tripwire; resuelve el conflicto con el SSR-default del repo — los proyectos SSR van por ADR), pnpm sin corepack, short-polling exclusivo, pg-boss como componente de primera clase (`baseJobPayloadSchema` + `correlationId` + idempotencia), contratos como route builders con rutas registradas desde el contrato y presupuesto congelado del wrapper, capa UI (Shadcn+Tailwind v4+RHF), Test-Last/Test-First con prohibición de RTL, `errorComponent` obligatorio, escalera de estado, Squash and Merge, CLAUDE.md jerárquicos, `correlationId` (reemplaza `requestId`) y el doc 14 (roadmap-parking). Del repo se preservan: convenciones REST del boundary (02), secciones Idioma y Zod v4 anti-errores (04), patrón globalSetup de Testcontainers (06), CSRF (07), Build/ESM/tsx+tsup y umbrales de Bun y TanStack Form (01), checklist plugin-aware (10) y los docs 11-13. Se corrige la regla de copia maestra (ahora: el repo manda) y se unifica el versionado a nivel de suite (los números por-doc previos quedan supersedidos). El sistema de specs (11-12) incorpora los modos de operación (dual-mode D17) y los refinamientos de grilling.
 - **Líneas previas (resumen):** vault 1.1–1.3 (2026-07-14): Bun eliminado, TanStack Start SPA, contratos sin RPC, cosecha ProjectAI, optimización post-review y freeze. Repo 1.0–1.2 (2026-07-05/06): versión inicial, ronda 1 de iteración (simplificación de stack, harness endurecido), suite unificada con specs 11-12 y onboarding 13.
 

@@ -1,6 +1,6 @@
 ---
 doc: checklist-dia-cero
-version: 1.5
+version: 1.6
 fecha: 2026-07-16
 estado: vigente
 tipo: capa-durable

@@ -1,10 +1,11 @@
 ---
 doc: sistema-specs
-version: 1.5
+version: 1.6
 fecha: 2026-07-16
 estado: vigente
 tipo: capa-durable
 changelog:
+  - "1.6 (paquete pre-validación; excepción documentada al freeze — ROADMAP): cuarta señal de registro del checkpoint (fricción por sesión de implementación) que decide el destino de /implement-task."
   - "1.5 (versionado unificado de suite): Decisión 9 — dos modos de operación (consultoría / producto propio, D17 de la capa conceptual): adversario, gate de aprobación y umbral extra por modo; refinamientos de grilling (facts vs decisions, una pregunta a la vez, confirmation gate) elevados a contrato en la guía; métricas adicionales del checkpoint."
   - "1.2: Integración en la suite unificada (doc 11). Diagnóstico comprimido a Fundamentos; radar de fuentes movido a 00-INDICE; roadmap retirado (pasa a spec del meta-repo); ejemplos alineados al stack final (Node LTS runtime); rutas canónicas: specs/ en raíz + docs/decisions/."
   - "1.1: Protocolo de cambio mid-feature, trazabilidad AC→tests, trabajo no-feature, criterios de checkpoint, paralelización."
@@ -159,7 +160,7 @@ El plan de adopción es trabajo, no doctrina: vive como spec del propio meta-rep
 
 Si ≥ 5 de 6 se cumplen tras ~2 meses de uso real → el sistema queda como estándar. Si fallan C1 o C6 → simplificar la capa viva. Si falla C2 → revisar calidad de specs (probablemente ambigüedad en ACs).
 
-Registrar además durante la validación (no son criterios, son señales de honestidad del sistema): **% de ACs marcados `manual`/exentos** (si crece, C4 se está gameando), **horas/semana dedicadas al sistema en sí** (no al producto — el costo que C1 no captura), y **frecuencia de asks del drift-check** (trigger de la escalación de scoping).
+Registrar además durante la validación (no son criterios, son señales de honestidad del sistema): **% de ACs marcados `manual`/exentos** (si crece, C4 se está gameando), **horas/semana dedicadas al sistema en sí** (no al producto — el costo que C1 no captura), **frecuencia de asks del drift-check** (trigger de la escalación de scoping), y **fricción por sesión de implementación** (minutos de armado de contexto y olvidos de checkbox/feedback-loop — el dato que decide si `/implement-task` se consolida, crece o se elimina).
 
 ## Riesgos asumidos
 

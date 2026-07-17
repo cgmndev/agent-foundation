@@ -1,6 +1,6 @@
 ---
 doc: guia-specs
-version: 1.5
+version: 1.6
 fecha: 2026-07-16
 estado: vigente
 tipo: capa-durable
@@ -98,7 +98,7 @@ ACs de verificación manual (raros, ej. "el cliente valida visualmente el diseñ
 | 3. Aprobación (gate por modo) | Según ADR 0001 | **Consultoría:** la spec en lenguaje de negocio se revisa con el aprobador nombrado; aprobación escrita por el canal declarado. **Producto propio:** separación temporal — sesión distinta, mínimo una noche, y las 3 preguntas de la Decisión 9 respondidas por escrito en la spec. Solo entonces: `status: active`, se calcula `source_hash` |
 | 4. Plan | Agente + tú | El agente genera `plan.md` desde la spec + `docs/architecture.md` + ADRs. Tú revisas los trade-offs — este es el review de mayor valor de todo el ciclo |
 | 5. Tasks | Agente | Genera `tasks.md` desde el plan. Revisión rápida de orden y granularidad |
-| 6. Implementación | Agente(s) | Ejecuta tasks marcando checkboxes. Los tests de ACs se escriben ANTES o JUNTO a cada task que los satisface, nunca al final |
+| 6. Implementación | Agente(s) | Ejecuta tasks marcando checkboxes — una sesión limpia por task/fase, mecanizada con `/implement-task` (§7). Los tests de ACs se escriben ANTES o JUNTO a cada task que los satisface, nunca al final |
 | 7. Verificación | Tú | Suite completa verde + revisión del diff. El drift-check debe estar limpio |
 | 8. `/close-spec` | Skill + tú | Ritual de cierre (§7). Extracción de órganos + archivo |
 
@@ -155,6 +155,16 @@ Implementados como skills del plugin `agent-foundation` (`skills/<nombre>/SKILL.
 2. **Verificar el gate del modo** (ADR 0001): consultoría → confirmación de que existe aprobación escrita del aprobador nombrado; producto propio → separación temporal (la spec no se creó en esta misma sesión/día) y las 3 preguntas de la Decisión 9 respondidas por escrito en la spec. Si falta algo, parar y decirlo.
 3. `status: active`, calcular y escribir `source_hash`.
 4. Ofrecer generar `plan.md` (requiere leer `docs/architecture.md` + ADRs relevantes antes de proponer enfoque).
+
+### `/implement-task <slug> [id-de-task]`
+
+*(EN OBSERVACIÓN durante la validación: el checkpoint C1–C6 decide si se consolida, crece o se elimina.)*
+
+1. Verificar `format` compatible, `status: active` y cadena de hashes limpia (`spec-hash.mjs check`); con drift, parar (§5).
+2. Cargar el **contexto justo**: `plan.md` completo + tabla de ACs de la spec + la task objetivo (la primera sin marcar si no se indicó) + docs de fundación según la tabla del [00-INDICE.md](00-INDICE.md). Nunca la suite completa.
+3. Implementar el vertical slice con los tests de sus `AC-NN` en la misma task; respetar la superficie declarada del plan (salirse = parar y decirlo, no una excepción silenciosa).
+4. `pnpm check && pnpm test` en verde → marcar checkbox + notas de ejecución → ofrecer commit convencional.
+5. Informar el presupuesto de contexto restante: siguiente task solo si cabe con holgura en la smart zone; si no, clear y sesión limpia. Última task → `/review-fresh` y `/close-spec`.
 
 ### `/change-spec <slug>`
 1. Ejecutar el árbol de §5 preguntando al usuario qué ACs afecta el cambio.

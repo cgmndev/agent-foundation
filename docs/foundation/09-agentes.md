@@ -1,6 +1,6 @@
 ---
 doc: agentes
-version: 1.5
+version: 1.6
 fecha: 2026-07-16
 estado: vigente
 tipo: capa-durable
@@ -45,6 +45,7 @@ Capas de enforcement distintas y complementarias: estos hooks gobiernan al agent
 Llegan con el plugin `agent-foundation` (no se copian al repo); cada `SKILL.md` es su propia documentación:
 
 - Lifecycle de specs: `/new-spec`, `/activate-spec`, `/change-spec`, `/close-spec`, más `/adr` (decisiones).
+- Implementación: `/implement-task` — mecaniza la sesión estándar de una task (§Flujo de abajo, pasos 1–4) con contexto justo. EN OBSERVACIÓN: el checkpoint decide su destino.
 - Scaffolding: `/new-module <nombre>` (backend según [02-arquitectura.md](02-arquitectura.md)), `/new-feature <nombre>` (frontend).
 - `/review-fresh`: delega el review en el agente `revisor` del plugin — contexto limpio garantizado.
 - `/init-project`: instancia la fundación completa en un repo nuevo (día cero, parte mecánica).
@@ -62,6 +63,8 @@ El CLAUDE.md raíz se mantiene corto (~150 líneas). Cuando una app acumula regl
 4. `pnpm check && pnpm test` → commit convencional → siguiente task o cierre.
 5. Review SIEMPRE en sesión/contexto fresco (humano o sesión dedicada), nunca en la sesión implementadora — mecanizado con `/review-fresh` (agente `revisor`).
 6. Multi-task paralelo: git worktrees (2-3 máximo mientras el review sea el cuello de botella).
+
+(Los pasos 1–4 están mecanizados con `/implement-task`; el ritual manual de arriba sigue siendo el contrato.)
 
 ## Documentación que el agente mantiene (definition of done documental)
 

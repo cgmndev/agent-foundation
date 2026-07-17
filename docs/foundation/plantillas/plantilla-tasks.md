@@ -17,6 +17,10 @@ REGLAS:
   verificable, del tamaño que un agente completa sin perder foco
   (regla práctica: si una task necesita sub-decisiones de diseño,
   era material de plan.md, no de tasks.md).
+- Dimensionar por contexto: una fase ≈ una sesión de agente como
+  máximo — debe caber en la smart zone (<~100k tokens; 09-agentes §1).
+  Fase que no cabe en una sesión → partirla. Sesión limpia por fase;
+  clear antes de la siguiente.
 - Marcar checkboxes A MEDIDA que se completan, no en lote al final.
 - Referenciar los AC que cada task satisface: los tests con ID se
   escriben en la misma task, no en una fase final de "testing".
