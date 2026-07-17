@@ -1,11 +1,9 @@
 # agent-foundation — Fundación de Ingeniería Agent-First
 
-Meta-repo con la **fundación** reutilizable para proyectos de software desarrollados con
-agentes (Claude Code). Es dos cosas a la vez:
+Meta-repo con la **fundación** reutilizable para proyectos de software desarrollados con agentes (Claude Code). Es dos cosas a la vez:
 
 1. **La suite de decisiones** — stack, arquitectura, convenciones y sistema de especificaciones.
-2. **El harness ejecutable** — un plugin de Claude Code (`agent-foundation`) con skills, hooks de
-   enforcement, agente revisor y scripts. La raíz de este repo ES el plugin.
+2. **El harness ejecutable** — un plugin de Claude Code (`agent-foundation`) con skills, hooks de enforcement, agente revisor y scripts. La raíz de este repo ES el plugin.
 
 No es una aplicación. El mapa completo de dónde está cada cosa: [CLAUDE.md](CLAUDE.md).
 
@@ -21,7 +19,7 @@ No es una aplicación. El mapa completo de dónde está cada cosa: [CLAUDE.md](C
 ```
 /plugin marketplace add cgmndev/agent-foundation   (o la ruta local del clon)
 /plugin install agent-foundation@agent-foundation
-/init-project                               (en el repo nuevo)
+/init-project  (en el repo nuevo)
 ```
 
 Maquinaria centralizada (se actualiza vía plugin) · decisiones snapshoteadas por proyecto (deliberado).
