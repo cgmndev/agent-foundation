@@ -1,9 +1,10 @@
 ---
 doc: guia-specs
-version: 1.6
-fecha: 2026-07-16
+version: 1.7
+fecha: 2026-07-22
 estado: vigente
 tipo: capa-durable
+capa: metodo
 ---
 
 # 12 — Guía Operativa de Especificaciones
@@ -63,7 +64,7 @@ Los hashes los calculan y escriben los skills (`/activate-spec`, `/change-spec`)
 
 Convención de tres partes:
 
-1. **En la spec:** cada criterio tiene ID estable `AC-NN` (dos o más dígitos) en la tabla de acceptance criteria. Los IDs nunca se reutilizan ni renumeran; si un AC se elimina en un bump de versión, su número muere con él.
+1. **En la spec:** cada criterio tiene ID estable `AC-NN` (dos o más dígitos) en la tabla de acceptance criteria. Los IDs nunca se reutilizan ni renumeran; si un AC se elimina en un bump de versión, su número muere con él. **La numeración es global al proyecto:** `/new-spec` asigna continuando desde el AC más alto existente en `specs/` (active y archive) — la primera spec del proyecto arranca en AC-01, las siguientes continúan donde quedó la anterior. Razón: la verificación (punto 3) es un grep global sobre los tests del monorepo, y los tests de specs cerradas permanecen; con numeración por-spec, los AC de la feature N quedarían "satisfechos" por tests de features anteriores.
 2. **En los tests** (Vitest, `pnpm test`): el ID aparece literal en el nombre del test o del describe block:
 
 ```typescript
@@ -143,8 +144,8 @@ La regla de "tachar, no borrar" ACs mantiene la spec legible como historia dentr
 Implementados como skills del plugin `agent-foundation` (`skills/<nombre>/SKILL.md` en el repo de la fundación); este apartado es su contrato de comportamiento. Las plantillas se leen de `docs/foundation/plantillas/` del proyecto (fallback: las bundled en el plugin).
 
 ### `/new-spec <slug>`
-1. Validar que no existe `specs/active/*-<slug>`.
-2. Crear carpeta `specs/active/AAAA-MM-<slug>/` con `spec.md` desde plantilla (`status: draft`, fecha, autor).
+1. Validar que no existe `specs/active/*-<slug>` ni el slug en `specs/archive/**` — vía Bash (`ls`), porque archive-guard bloquea Read/Grep/Glob sobre el archivo y este listado puntual es el bypass legítimo documentado (§8).
+2. Crear carpeta `specs/active/AAAA-MM-<slug>/` con `spec.md` desde plantilla (`status: draft`, fecha, autor). Los AC se numeran desde el máximo existente en `specs/` + 1 (numeración global, §3; se calcula con grep vía Bash).
 3. Entrevistar al usuario sección por sección (contexto → objetivo → alcance → ACs → restricciones). **Reglas del grilling:** una pregunta a la vez, explicando en el prompt por qué se pregunta; **facts vs decisions** — los hechos se descubren explorando el código/repo (no se preguntan), las decisiones solo las toma el usuario (sí se preguntan). No inventar contenido.
 4. **Confirmation gate:** antes de volcar contenido a los artefactos, resumir el entendimiento (objetivo, alcance, ACs) y esperar confirmación explícita del usuario. No se generan artefactos ni se implementa sin entendimiento compartido confirmado.
 5. Al terminar, listar las preguntas abiertas restantes y recordar que la spec no puede pasar a `active` con preguntas abiertas — y, en modo producto propio, que la activación es en OTRA sesión (Decisión 9).
@@ -194,7 +195,7 @@ if [[ "$path" == *"/specs/archive/"* ]]; then
 fi
 ```
 
-Notas: cubre la lectura *espontánea* del agente (Read/Grep/Glob); `cat` vía Bash lo bypasea y es aceptable — el hook protege contra contaminación accidental de contexto, no es adversarial (guardrails como trust infrastructure). Si tú pides revisar una spec histórica, se lee y se comunica.
+Notas: cubre la lectura *espontánea* del agente (Read/Grep/Glob — incluido el campo `pattern` de Glob, que lleva la ruta objetivo); `cat`/`ls` vía Bash lo bypasea y es aceptable — el hook protege contra contaminación accidental de contexto, no es adversarial (guardrails como trust infrastructure), y ese bypass es justo lo que usa `/new-spec` para verificar unicidad de slugs (§7). Si tú pides revisar una spec histórica, se lee y se comunica.
 
 **drift-check** — PreToolUse sobre Edit/Write en `apps/` y `packages/`: si alguna feature activa tiene `plan.spec_hash ≠ spec.source_hash` (o `tasks.plan_hash ≠ hash(plan)`), pide confirmación (**ask**) señalando la spec desfasada. Si el cambio pertenece a esa spec: detenerse y regenerar (`/change-spec`); si es trabajo ajeno (hotfix, cambio sin spec de los umbrales de la Decisión 6, otra spec sana): continuar y arreglar el drift aparte. Deny se descartó a propósito: sin ownership verificable del path editado, bloquearía trabajo ajeno y entrenaría el hábito de bypass. Escalación futura (solo con evidencia de fricción real): scoping por la "Superficie de cambio" declarada del plan.
 

@@ -1,8 +1,8 @@
 #!/bin/bash
 # Batería de pruebas del harness agent-foundation contra un proyecto fixture
-# temporal (guardias, CLIs de hashing/trazabilidad y hooks de
-# sesión). Correr tras cualquier cambio en scripts/: `bash scripts/test-harness.sh`.
-# Exit code = número de fallos.
+# temporal (guardias, CLIs de hashing/trazabilidad, hooks de sesión y la
+# costura método/pack — docs/foundation/pack.json). Correr tras cualquier
+# cambio en scripts/: `bash scripts/test-harness.sh`. Exit code = nº de fallos.
 REPO="$(cd "$(dirname "$0")/.." && pwd)"
 WORK="$(mktemp -d)"
 FIX="$WORK/fixture"
@@ -83,6 +83,7 @@ git add -A && git commit -qm init
 node -e "JSON.parse(require('fs').readFileSync('$REPO/.claude-plugin/plugin.json'))"; check "plugin.json válido" 0 $?
 node -e "JSON.parse(require('fs').readFileSync('$REPO/.claude-plugin/marketplace.json'))"; check "marketplace.json válido" 0 $?
 node -e "JSON.parse(require('fs').readFileSync('$REPO/hooks/hooks.json'))"; check "hooks.json válido" 0 $?
+node -e "JSON.parse(require('fs').readFileSync('$REPO/docs/foundation/pack.json'))"; check "pack.json (pack de referencia) válido" 0 $?
 
 # ── 2. spec-hash: stamp + check ──────────────────────────────────────────
 OUT=$(node "$REPO/scripts/spec-hash.mjs" stamp specs/active/2026-07-demo 2>&1); check "stamp all" 0 $?
@@ -111,6 +112,10 @@ P="{\"tool_name\":\"Read\",\"tool_input\":{\"file_path\":\"$FIX/specs/archive/20
 OUT=$(echo "$P" | node "$REPO/scripts/hooks/pre-tool-use.mjs" 2>&1); check "archive-guard bloquea Read" 2 $?
 P="{\"tool_name\":\"Grep\",\"tool_input\":{\"pattern\":\"x\",\"path\":\"$FIX/specs/archive\"},\"cwd\":\"$FIX\"}"
 OUT=$(echo "$P" | node "$REPO/scripts/hooks/pre-tool-use.mjs" 2>&1); check "archive-guard bloquea Grep" 2 $?
+P="{\"tool_name\":\"Glob\",\"tool_input\":{\"pattern\":\"specs/archive/**\"},\"cwd\":\"$FIX\"}"
+OUT=$(echo "$P" | node "$REPO/scripts/hooks/pre-tool-use.mjs" 2>&1); check "archive-guard bloquea Glob (campo pattern)" 2 $?
+P="{\"tool_name\":\"Glob\",\"tool_input\":{\"pattern\":\"specs/active/**\"},\"cwd\":\"$FIX\"}"
+OUT=$(echo "$P" | node "$REPO/scripts/hooks/pre-tool-use.mjs" 2>&1); check "Glob sobre specs/active pasa" 0 $?
 P="{\"tool_name\":\"Read\",\"tool_input\":{\"file_path\":\"$FIX/specs/active/2026-07-demo/spec.md\"},\"cwd\":\"$FIX\"}"
 OUT=$(echo "$P" | node "$REPO/scripts/hooks/pre-tool-use.mjs" 2>&1); check "specs/active sí se lee" 0 $?
 
@@ -178,25 +183,67 @@ contains "brief lista la spec activa" "2026-07-demo" "$OUT"
 contains "brief cuenta tasks" "tasks 1/2" "$OUT"
 contains "brief marca drift (spec editada en test 9)" "DRIFT" "$OUT"
 
-# ── 11. verify-done (stop) ───────────────────────────────────────────────
+# ── 11. verify-done (stop): exige check Y test ──────────────────────────
 touch apps/api/src/nuevo.ts
 P="{\"cwd\":\"$FIX\",\"stop_hook_active\":false}"
 OUT=$(echo "$P" | node "$REPO/scripts/hooks/stop.mjs" 2>&1); check "stop bloquea con TS sin verificar" 2 $?
 P="{\"cwd\":\"$FIX\",\"stop_hook_active\":true}"
 OUT=$(echo "$P" | node "$REPO/scripts/hooks/stop.mjs" 2>&1); check "stop_hook_active corta el bucle" 0 $?
 P="{\"tool_name\":\"Bash\",\"tool_input\":{\"command\":\"bun run check\"},\"tool_response\":{},\"cwd\":\"$FIX\"}"
-echo "$P" | node "$REPO/scripts/hooks/post-tool-use.mjs"; check "post-tool-use escribe marcador" 0 $?
+echo "$P" | node "$REPO/scripts/hooks/post-tool-use.mjs"; check "post-tool-use marca la parte check" 0 $?
 P="{\"cwd\":\"$FIX\",\"stop_hook_active\":false}"
-OUT=$(echo "$P" | node "$REPO/scripts/hooks/stop.mjs" 2>&1); check "tras marcador, stop pasa" 0 $?
+OUT=$(echo "$P" | node "$REPO/scripts/hooks/stop.mjs" 2>&1); check "solo check NO desbloquea (falta test)" 2 $?
+contains "el aviso nombra la parte faltante" "falta: test" "$OUT"
+P="{\"tool_name\":\"Bash\",\"tool_input\":{\"command\":\"bun run test\"},\"tool_response\":{},\"cwd\":\"$FIX\"}"
+echo "$P" | node "$REPO/scripts/hooks/post-tool-use.mjs"; check "post-tool-use marca la parte test" 0 $?
+P="{\"cwd\":\"$FIX\",\"stop_hook_active\":false}"
+OUT=$(echo "$P" | node "$REPO/scripts/hooks/stop.mjs" 2>&1); check "con check + test, stop pasa" 0 $?
 
-# marcador con pnpm shorthand (regex PM-agnóstico de post-tool-use)
+# loop completo en un solo comando compuesto (shorthand PM-agnóstico)
 touch apps/api/src/otro.ts
 P="{\"cwd\":\"$FIX\",\"stop_hook_active\":false}"
 OUT=$(echo "$P" | node "$REPO/scripts/hooks/stop.mjs" 2>&1); check "stop vuelve a bloquear con cambio nuevo" 2 $?
-P="{\"tool_name\":\"Bash\",\"tool_input\":{\"command\":\"pnpm check\"},\"tool_response\":{},\"cwd\":\"$FIX\"}"
-echo "$P" | node "$REPO/scripts/hooks/post-tool-use.mjs"; check "post-tool-use acepta pnpm shorthand" 0 $?
+P="{\"tool_name\":\"Bash\",\"tool_input\":{\"command\":\"pnpm check && pnpm test\"},\"tool_response\":{},\"cwd\":\"$FIX\"}"
+echo "$P" | node "$REPO/scripts/hooks/post-tool-use.mjs"; check "comando compuesto marca ambas partes" 0 $?
 P="{\"cwd\":\"$FIX\",\"stop_hook_active\":false}"
-OUT=$(echo "$P" | node "$REPO/scripts/hooks/stop.mjs" 2>&1); check "marcador pnpm desbloquea stop" 0 $?
+OUT=$(echo "$P" | node "$REPO/scripts/hooks/stop.mjs" 2>&1); check "marcador compuesto desbloquea stop" 0 $?
+
+# ── 12. pack.json: la costura método/stack ──────────────────────────────
+mkdir -p docs/foundation lib
+cat > docs/foundation/pack.json <<'EOF'
+{
+  "pack": "fixture-pack",
+  "feedbackLoop": "make verify",
+  "sourceFileRegex": "\\.py$",
+  "testFileRegex": "\\.spec\\.js$",
+  "codeRoots": ["lib"],
+  "stackGuards": []
+}
+EOF
+P="{\"tool_name\":\"Bash\",\"tool_input\":{\"command\":\"bun add left-pad\"},\"cwd\":\"$FIX\"}"
+OUT=$(echo "$P" | node "$REPO/scripts/hooks/pre-tool-use.mjs" 2>&1); RC=$?
+[ -z "$OUT" ] && [ $RC = 0 ]; check "pack sin stackGuards: bun add pasa sin ask" 0 $?
+P="{\"tool_name\":\"Bash\",\"tool_input\":{\"command\":\"bunx drizzle-kit push\"},\"cwd\":\"$FIX\"}"
+OUT=$(echo "$P" | node "$REPO/scripts/hooks/pre-tool-use.mjs" 2>&1); check "pack sin stackGuards: guard-migrations apagado" 0 $?
+P="{\"tool_name\":\"Read\",\"tool_input\":{\"file_path\":\"$FIX/specs/archive/2026-06/2026-05-vieja/spec.md\"},\"cwd\":\"$FIX\"}"
+OUT=$(echo "$P" | node "$REPO/scripts/hooks/pre-tool-use.mjs" 2>&1); check "guards de método no se apagan por pack" 2 $?
+touch apps/api/src/ignorado.ts
+P="{\"cwd\":\"$FIX\",\"stop_hook_active\":false}"
+OUT=$(echo "$P" | node "$REPO/scripts/hooks/stop.mjs" 2>&1); check "pack .py: cambio .ts ya no dispara verify-done" 0 $?
+touch apps/api/src/app.py
+P="{\"cwd\":\"$FIX\",\"stop_hook_active\":false}"
+OUT=$(echo "$P" | node "$REPO/scripts/hooks/stop.mjs" 2>&1); check "pack .py: cambio .py sí dispara" 2 $?
+contains "el aviso usa el feedback loop del pack" "make verify" "$OUT"
+mkdir -p specs/active/2026-07-pack
+cat > specs/active/2026-07-pack/spec.md <<'EOF'
+| ID | Criterio | Verificación |
+|----|----------|--------------|
+| AC-90 | criterio del pack fixture | test |
+EOF
+cat > lib/pack.spec.js <<'EOF'
+describe('AC-90: criterio del pack fixture', () => {});
+EOF
+OUT=$(node "$REPO/scripts/check-acs.mjs" specs/active/2026-07-pack/spec.md 2>&1); check "check-acs usa codeRoots/testFileRegex del pack" 0 $?
 
 echo ""
 echo "══════ RESULTADO: $PASS PASS · $FAIL FAIL ══════"

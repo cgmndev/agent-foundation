@@ -45,16 +45,18 @@ entra y NO entra. Protege contra scope creep y ancla al agente. -->
 
 ## 4. Acceptance Criteria
 
-<!-- IDs estables AC-NN. Nunca se renumeran ni reutilizan. Si se elimina
-uno en una versión posterior: tacharlo (~~AC-04~~ [eliminado v1.1]), no
-borrarlo. Cada AC debe ser verificable. Formato Given/When/Then opcional
-cuando aporte claridad. -->
+<!-- IDs estables AC-NN. Nunca se renumeran ni reutilizan, y la numeración
+es GLOBAL al proyecto: esta spec CONTINÚA desde el AC más alto ya usado en
+specs/ (lo calcula /new-spec; solo la primera spec del proyecto arranca en
+AC-01). Si se elimina uno en una versión posterior: tacharlo
+(~~AC-04~~ [eliminado v1.1]), no borrarlo. Cada AC debe ser verificable.
+Formato Given/When/Then opcional cuando aporte claridad. -->
 
 | ID | Criterio | Verificación |
 |----|----------|--------------|
-| AC-01 | <comportamiento observable y verificable> | test |
-| AC-02 | ... | test |
-| AC-03 | ... | manual (justificar) |
+| AC-NN | <comportamiento observable y verificable> | test |
+| AC-NN | ... | test |
+| AC-NN | ... | manual (justificar) |
 
 ## 5. Restricciones y supuestos
 

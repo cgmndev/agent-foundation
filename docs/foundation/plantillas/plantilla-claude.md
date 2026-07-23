@@ -7,6 +7,9 @@ artefacto: claude-md
 PLANTILLA CLAUDE.md — copiar el contenido bajo la línea como CLAUDE.md del
 proyecto y ajustar los <>. Presupuesto: <~150 líneas rellenada. Las secciones
 "Comandos" y "Reglas duras" son idénticas en todos los proyectos: no se tocan.
+Las secciones marcadas [PACK] las provee el pack elegido en el ADR-000
+(15-principios §Relación); el contenido de abajo es el del pack de referencia
+ts-monorepo. Los comentarios <!-- ... -> se eliminan al instanciar.
 -->
 ---
 
@@ -15,6 +18,8 @@ proyecto y ajustar los <>. Presupuesto: <~150 líneas rellenada. Las secciones
 <Una frase: qué es y para quién.>
 
 ## Stack
+<!-- [PACK] -->
+
 TypeScript estricto · Node LTS + pnpm · Hono · pg-boss ·
 React + TanStack Start (modo SPA) + Query · Zustand (solo client state) ·
 Shadcn UI + Tailwind v4 + lucide-react · react-hook-form + Zod v4 ·
@@ -62,6 +67,7 @@ Detalle y anti-patrones: docs/foundation/02-arquitectura.md
 - Ideas fuera de alcance → fila en docs/roadmap.md (parking), no código ni TODOs.
 
 ## Prohibido → Alternativa
+<!-- [PACK] -->
 | Prohibido | Usar en su lugar |
 |---|---|
 | fetch/axios directo en componentes | Hooks de feature con TanStack Query + cliente de contratos |

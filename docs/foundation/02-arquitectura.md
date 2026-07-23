@@ -1,9 +1,10 @@
 ---
 doc: arquitectura
-version: 1.6
-fecha: 2026-07-16
+version: 1.7
+fecha: 2026-07-22
 estado: vigente
 tipo: capa-durable
+capa: pack
 ---
 
 # 02 — Arquitectura: El Punto Óptimo

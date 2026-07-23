@@ -11,7 +11,7 @@ Contrato de comportamiento: `docs/foundation/12-guia-specs.md` §7. Antes de emp
 ## Pasos
 
 1. **Slug:** usa `$ARGUMENTS`; si falta, pídelo. Valida kebab-case corto y descriptivo.
-2. **Unicidad:** verifica que no exista `specs/active/*-<slug>` ni aparezca en `specs/archive/**` (los slugs no se reutilizan). Si existe, para y muéstralo.
+2. **Unicidad:** verifica que no exista `specs/active/*-<slug>` ni aparezca en `specs/archive/**` (los slugs no se reutilizan). Hazlo vía Bash — `ls specs/active/ specs/archive/*/ 2>/dev/null` — porque archive-guard bloquea Read/Grep/Glob sobre el archivo y este listado puntual es el bypass legítimo documentado (12-guia §8). Si existe, para y muéstralo.
 3. **Carpeta y plantilla:** crea `specs/active/AAAA-MM-<slug>/` (AAAA-MM = mes actual) y copia la plantilla de spec:
    - Primero `docs/foundation/plantillas/plantilla-spec.md` (snapshot del proyecto);
    - si el proyecto no la tiene: `"${CLAUDE_PLUGIN_ROOT:-.}/docs/foundation/plantillas/plantilla-spec.md"`.
@@ -21,7 +21,7 @@ Contrato de comportamiento: `docs/foundation/12-guia-specs.md` §7. Antes de emp
    - **Una pregunta a la vez, explicando por qué la haces** — la justificación en el prompt se respeta más que la instrucción sola.
    - **Facts vs decisions:** los hechos (cómo funciona el código hoy, qué existe en el repo) los descubres TÚ explorando — no se preguntan. Las decisiones (qué se quiere, qué queda fuera, trade-offs de producto) las toma SOLO el usuario — sí se preguntan.
    - No inventes contenido: pregunta. Propón redacción solo DESPUÉS de la respuesta del usuario y muéstrala para ajuste.
-   - ACs con ID `AC-NN` estable y verificable, en lenguaje de negocio. `Verificación: manual` solo si de verdad no es testeable (y justifícalo).
+   - ACs con ID `AC-NN` estable y verificable, en lenguaje de negocio. **Numeración GLOBAL del proyecto:** antes de proponer IDs calcula el siguiente libre — `grep -rhoE 'AC-[0-9]+' specs/ 2>/dev/null | grep -oE '[0-9]+' | sort -n | tail -1` vía Bash — y numera desde ahí +1 (solo la primera spec del proyecto arranca en AC-01; razón en 12-guia §3). `Verificación: manual` solo si de verdad no es testeable (y justifícalo).
    - La spec es el QUÉ/POR QUÉ: si en la conversación aparecen decisiones técnicas, anótalas aparte y di que pertenecen al plan.
 6. **Confirmation gate:** antes de volcar el contenido a la spec, resume el entendimiento (objetivo, alcance, ACs propuestos) en ≤15 líneas y espera confirmación explícita del usuario. Sin entendimiento compartido confirmado no se generan artefactos.
 7. **Cierre:** lista las preguntas abiertas restantes en la sección 6 y recuerda: la spec **no puede pasar a `active` con preguntas abiertas** (`/activate-spec` lo verifica). Si el proyecto opera en modo producto-propio (ADR 0001), recuerda también: la activación ocurre en OTRA sesión — separación temporal obligatoria (12-guia §4/§7).

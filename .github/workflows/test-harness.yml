@@ -1,0 +1,19 @@
+# CI del harness: corre la batería completa (scripts/test-harness.sh) en cada
+# push/PR. Coherencia básica: un producto cuyo pitch es "enforcement por
+# maquinaria" verifica su propia maquinaria en cada cambio.
+name: test-harness
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: bash scripts/test-harness.sh

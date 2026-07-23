@@ -12,7 +12,7 @@ Ejecuta la parte automatizable de `docs/foundation/10-checklist-dia-cero.md` (Fa
 
 1. **Seguridad:** confirma que el cwd es la raíz del proyecto destino y que NO existe ya `docs/foundation/` (si existe: proyecto ya inicializado — aborta y ofrece comparar versiones de la suite en su lugar).
 2. **Entrevista mínima:** nombre del proyecto, cliente, una frase de qué es y para quién, y cloud (AWS/OCI) si ya se sabe.
-3. **Copia la suite** (snapshot: las decisiones del proyecto quedan congeladas a esta versión, por diseño):
+3. **Copia la suite** (snapshot: las decisiones del proyecto quedan congeladas a esta versión, por diseño; incluye `plantillas/` y `pack.json` — el adapter de maquinaria del pack, 15-principios):
    ```bash
    mkdir -p docs && cp -R "${CLAUDE_PLUGIN_ROOT:-.}/docs/foundation" docs/
    ```

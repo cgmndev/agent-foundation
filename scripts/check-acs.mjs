@@ -1,9 +1,14 @@
 #!/usr/bin/env node
 // Trazabilidad AC → tests (12-guia §3): todo AC-NN de la tabla de acceptance
 // criteria de la spec —no tachado, no manual— debe aparecer literal en algún
-// *.test.ts(x) bajo las raíces de código. Lo invoca /close-spec como gate.
+// archivo de test bajo las raíces de código. Lo invoca /close-spec como gate.
+// Raíces y patrón de test los define el pack del proyecto
+// (docs/foundation/pack.json → codeRoots, testFileRegex; fallback: pack de
+// referencia TS). Los AC-NN son únicos a nivel de PROYECTO (numeración
+// global entre specs): sin eso, este grep global daría falsos positivos con
+// los tests de features ya cerradas.
 //
-//   check-acs.mjs <spec.md> [--roots apps,packages]
+//   check-acs.mjs <spec.md> [--roots apps,packages]   (--roots pisa al pack)
 //
 // Salida: OK (exit 0) o lista de ACs sin test (exit 1). Los ACs manuales se
 // listan aparte: exigen confirmación humana explícita, no grep.
@@ -11,6 +16,7 @@
 import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { findRoot } from './lib/project-root.mjs';
+import { loadPack, safeRegex } from './lib/pack.mjs';
 
 const args = process.argv.slice(2);
 const specPath = args.find((a) => !a.startsWith('--'));
@@ -40,9 +46,11 @@ if (!required.size && !manual.size) {
   process.exit(0);
 }
 
-// 2. Collect AC ids present in test files under the roots.
+// 2. Collect AC ids present in test files under the roots (pack-defined).
 const projectRoot = findRoot(dirname(resolve(specPath))) ?? process.cwd();
-const roots = (rootsArg ? rootsArg.split(',') : ['apps', 'packages'])
+const pack = loadPack(projectRoot);
+const TEST_FILE_RE = safeRegex(pack.testFileRegex, /\.test\.tsx?$/);
+const roots = (rootsArg ? rootsArg.split(',') : pack.codeRoots ?? ['apps', 'packages'])
   .map((r) => join(projectRoot, r.trim()))
   .filter((r) => existsSync(r));
 
@@ -53,7 +61,7 @@ function walk(dir) {
   for (const entry of readdirSync(dir, { withFileTypes: true })) {
     if (entry.isDirectory()) {
       if (!SKIP_DIRS.has(entry.name)) walk(join(dir, entry.name));
-    } else if (/\.test\.tsx?$/.test(entry.name)) {
+    } else if (TEST_FILE_RE.test(entry.name)) {
       for (const id of readFileSync(join(dir, entry.name), 'utf8').matchAll(/\bAC-\d{2,}\b/g)) {
         found.add(id[0]);
       }

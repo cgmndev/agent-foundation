@@ -1,9 +1,10 @@
 ---
 doc: onboarding
-version: 1.6
-fecha: 2026-07-16
+version: 1.7
+fecha: 2026-07-22
 estado: vigente
 tipo: capa-durable
+capa: metodo
 ---
 
 # 13 — Onboarding: cómo se trabaja aquí (tutorial)
@@ -73,7 +74,9 @@ Ejemplo: el cliente pide exportar reportes a PDF.
 y te entrevista sección por sección (contexto → objetivo → alcance → acceptance criteria →
 restricciones). Tu rol: responder con sustancia y **no dejarle inventar**. La spec es lenguaje
 de negocio puro — si te descubres hablando de endpoints o tablas, eso va al plan, no aquí. Los
-ACs quedan con ID estable (`AC-01`, `AC-02`…): cada uno será un test con ese ID en el nombre.
+ACs quedan con ID estable (`AC-01`, `AC-02`… — numeración **global** del proyecto: la segunda
+feature continúa donde quedó la anterior, nunca reinicia): cada uno será un test con ese ID en
+el nombre.
 
 **Paso 2 — Aprobación.** Si hay cliente, la spec se revisa con él (para eso está en su idioma).
 Queda en `draft` hasta que no haya preguntas abiertas.

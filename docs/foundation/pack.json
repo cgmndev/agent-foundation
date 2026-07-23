@@ -1,0 +1,13 @@
+{
+  "pack": "ts-monorepo",
+  "suite": "1.7",
+  "feedbackLoop": "pnpm check && pnpm test",
+  "loopCommandRegexes": {
+    "check": "\\b(?:pnpm|npm|yarn|bun)\\s+run\\s+check\\b|\\b(?:pnpm|npm|yarn)\\s+check\\b",
+    "test": "\\b(?:pnpm|npm|yarn|bun)\\s+run\\s+test\\b|\\b(?:pnpm|npm|yarn)\\s+test\\b"
+  },
+  "sourceFileRegex": "\\.(ts|tsx)$",
+  "testFileRegex": "\\.test\\.tsx?$",
+  "codeRoots": ["apps", "packages"],
+  "stackGuards": ["guard-deps", "guard-migrations"]
+}

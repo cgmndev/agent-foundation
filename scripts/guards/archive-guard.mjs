@@ -1,7 +1,11 @@
 // Guard: keep archived specs out of spontaneous context (12-guia-specs §8).
-// Blocks Read/Grep/Glob targeting specs/archive/**. Bash `cat` bypasses it on
-// purpose: this is trust infrastructure against accidental context
-// contamination, not an adversarial control.
+// Blocks Read/Grep/Glob targeting specs/archive/**. Bash `cat`/`ls` bypasses
+// it on purpose: this is trust infrastructure against accidental context
+// contamination, not an adversarial control (and /new-spec's slug-uniqueness
+// scan relies on that documented bypass).
+//
+// Glob carries its target in `pattern`, so that field is inspected for Glob
+// only — for Grep, `pattern` is content to search, not a path.
 //
 // Sample payload: {"tool_name":"Read","tool_input":{"file_path":"specs/archive/2026-07/x/spec.md"}}
 
@@ -10,7 +14,7 @@ const TOOLS = new Set(['Read', 'Grep', 'Glob']);
 export function check(input) {
   if (!TOOLS.has(input.tool_name)) return null;
   const ti = input.tool_input ?? {};
-  const target = [ti.file_path, ti.path, ti.glob]
+  const target = [ti.file_path, ti.path, ti.glob, input.tool_name === 'Glob' ? ti.pattern : null]
     .filter((v) => typeof v === 'string')
     .join('\n');
   if (!/(^|\/)specs\/archive(\/|$)/m.test(target)) return null;

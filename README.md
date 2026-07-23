@@ -2,14 +2,14 @@
 
 Meta-repo con la **fundación** reutilizable para proyectos de software desarrollados con agentes (Claude Code). Es dos cosas a la vez:
 
-1. **La suite de decisiones** — stack, arquitectura, convenciones y sistema de especificaciones.
+1. **La suite de decisiones**, en tres capas: el **método** de specs (agnóstico al stack), los **principios agent-first** (qué hace a un stack agent-ready) y un **pack de referencia** ts-monorepo con las elecciones cerradas de stack/arquitectura — intercambiable por proyecto vía `pack.json` (ver `docs/foundation/00-INDICE.md` §Tres capas).
 2. **El harness ejecutable** — un plugin de Claude Code (`agent-foundation`) con skills, hooks de enforcement, agente revisor y scripts. La raíz de este repo ES el plugin.
 
 No es una aplicación. El mapa completo de dónde está cada cosa: [CLAUDE.md](CLAUDE.md).
 
 ## Mapa rápido
 
-- [`docs/foundation/`](docs/foundation/00-INDICE.md) — la suite (00–14). Empezar por el índice.
+- [`docs/foundation/`](docs/foundation/00-INDICE.md) — la suite (00–15 + `pack.json`). Empezar por el índice.
 - [`docs/foundation/plantillas/`](docs/foundation/plantillas/) — plantillas: spec, plan, tasks, ADR, docs vivos, CLAUDE.md.
 - [`skills/`](skills/) · [`agents/`](agents/) · [`hooks/`](hooks/hooks.json) · [`scripts/`](scripts/) — el harness (cada pieza se autodocumenta).
 - [`.claude-plugin/`](.claude-plugin/) — manifiesto del plugin y marketplace.
@@ -26,8 +26,8 @@ Maquinaria centralizada (se actualiza vía plugin) · decisiones snapshoteadas p
 
 ## Estado
 
-- Suite v1.6 (2026-07-16, paquete pre-validación: fases por sesión, destilación en /new-spec, /implement-task en observación) · Harness v0.5.0 · batería de pruebas en verde (47/47).
-- **Congelado en features** hasta la validación real (primera feature de un proyecto real por el ciclo completo, checkpoint C1-C6). Solo entran fixes de fricción real. (Única excepción: el paquete pre-validación 2026-07-16, documentado y cerrado en `ROADMAP.md`.)
+- Suite v1.7 (2026-07-22, corte método/principios/pack + numeración global de ACs + fixes de auditoría) · Harness v0.6.0 · batería de pruebas en verde (60/60, también en CI).
+- **Congelado en features** hasta la validación real (primera feature de un proyecto real por el ciclo completo, checkpoint C1-C6). Solo entran fixes de fricción real. (Dos excepciones documentadas y cerradas en `ROADMAP.md`: paquete pre-validación 2026-07-16 y corte método/pack 2026-07-22.)
 
 ## Pendiente
 

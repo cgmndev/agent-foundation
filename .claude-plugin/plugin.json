@@ -1,7 +1,7 @@
 {
   "name": "agent-foundation",
-  "description": "Harness agent-first de la fundación: lifecycle de specs (new/activate/change/close), sesión de implementación (/implement-task), guardias de enforcement (secrets, migraciones, deps, main, drift, archive), scaffolding de módulos/features, revisor en contexto fresco e init de proyectos.",
-  "version": "0.5.0",
+  "description": "Harness agent-first de la fundación: lifecycle de specs (new/activate/change/close), sesión de implementación (/implement-task), guardias de enforcement (secrets, migraciones, deps, main, drift, archive), scaffolding de módulos/features, revisor en contexto fresco e init de proyectos. Maquinaria de método agnóstica al stack, parametrizada por pack (docs/foundation/pack.json).",
+  "version": "0.6.0",
   "author": {
     "name": "Claudio Mardones",
     "email": "claudio@cgmn.dev"

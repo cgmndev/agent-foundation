@@ -14,7 +14,7 @@ Contrato: `docs/foundation/12-guia-specs.md` §7. *La spec se tira, pero antes s
 
 2. **Gates bloqueantes, en orden:**
    a. `format` compatible (12-guia §2) y cadena de hashes limpia: `node "${CLAUDE_PLUGIN_ROOT:-.}/scripts/spec-hash.mjs" check specs/active/<carpeta>`
-   b. Suite verde: `pnpm check && pnpm test`. Si el repo no tiene esos scripts (p. ej. repo de docs), pide confirmación explícita de N/A al usuario.
+   b. Suite verde: el feedback loop del proyecto — lo declara `docs/foundation/pack.json` (campo `feedbackLoop`; default del pack de referencia: `pnpm check && pnpm test`). Si el repo no tiene feedback loop (p. ej. repo de docs), pide confirmación explícita de N/A al usuario.
    c. Trazabilidad: `node "${CLAUDE_PLUGIN_ROOT:-.}/scripts/check-acs.mjs" specs/active/<carpeta>/spec.md`
       - ACs sin test → **BLOQUEO**: lista cuáles y para (se escriben los tests o se justifica el cambio vía /change-spec).
       - ACs manuales → pide confirmación explícita de que se validaron, uno a uno.

@@ -1,9 +1,10 @@
 ---
 doc: estructura-repo
-version: 1.6
-fecha: 2026-07-16
+version: 1.7
+fecha: 2026-07-22
 estado: vigente
 tipo: capa-durable
+capa: pack
 ---
 
 # 03 — Estructura del Repositorio

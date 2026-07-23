@@ -1,9 +1,10 @@
 ---
 doc: datos
-version: 1.6
-fecha: 2026-07-16
+version: 1.7
+fecha: 2026-07-22
 estado: vigente
 tipo: capa-durable
+capa: pack
 ---
 
 # 05 — Capa de Datos: PostgreSQL + Drizzle

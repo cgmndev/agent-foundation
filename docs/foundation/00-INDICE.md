@@ -1,18 +1,50 @@
 ---
 doc: indice
-version: 1.6
-fecha: 2026-07-16
+version: 1.7
+fecha: 2026-07-22
 estado: vigente
 tipo: capa-durable
+capa: indice
 ---
 
 # Fundación de Ingeniería — Fuente de Verdad Pre-Proyecto
 
-Suite de decisiones y convenciones de ingeniería para iniciar cualquier proyecto nuevo de software con desarrollo asistido por agentes (Claude Code). Es la **capa durable** del modelo de dos niveles: los specs (spec.md / plan.md / tasks.md) son efímeros y por feature; estos documentos son estables y por organización/proyecto. La suite incluye el sistema de especificaciones ([11](11-sistema-specs.md)–[12](12-guia-specs.md)), el onboarding humano ([13](13-onboarding.md)), el roadmap-parking ([14](14-roadmap-parking.md)) y las plantillas de todos los artefactos ([plantillas/](plantillas/)).
+Suite de decisiones y convenciones de ingeniería para iniciar cualquier proyecto nuevo de software con desarrollo asistido por agentes (Claude Code). Es la **capa durable** del modelo de dos niveles: los specs (spec.md / plan.md / tasks.md) son efímeros y por feature; estos documentos son estables y por organización/proyecto. La suite incluye el sistema de especificaciones ([11](11-sistema-specs.md)–[12](12-guia-specs.md)), el onboarding humano ([13](13-onboarding.md)), el roadmap-parking ([14](14-roadmap-parking.md)), los principios agent-first ([15](15-principios-agent-first.md)) y las plantillas de todos los artefactos ([plantillas/](plantillas/)).
 
-**Esta suite NO cubre:** el harness de roles (GERENTE, JUNIOR_DEV, SENIOR_DEV, DEVOPS), que tiene documentación separada. Aquí solo se referencian sus puntos de integración.
+**Esta suite NO cubre:** el harness de roles (GERENTE, JUNIOR_DEV, SENIOR_DEV, DEVOPS) — previsto, aún no construido (semilla: `agents/revisor.md`; pendiente #3 del ROADMAP del repo). Aquí solo se referencian sus puntos de integración.
+
+## Tres capas (v1.7): método · principios · pack
+
+La suite se declara en tres capas, marcadas con `capa:` en el frontmatter de cada doc. Regla de altura: **los criterios de elección son parte del modelo de desarrollo; las elecciones concretas son contexto del proyecto.**
+
+| Capa | Qué es | Docs | Dependencia de stack |
+|---|---|---|---|
+| **Método** | Sistema de specs, lifecycle, trazabilidad, enforcement, integración con el agente | 09, 11, 12, 13, 14 + plantillas + maquinaria del plugin | Ninguna (contrato) |
+| **Principios** | Los criterios agent-first que hacen a un stack "agent-ready"; contrato para autorar packs | [15](15-principios-agent-first.md) | Ninguna |
+| **Pack de referencia** | Las elecciones cerradas: stack ts-monorepo, arquitectura, datos, testing instrumentado, seguridad, devops, día cero | 01–08, 10 | Total (es su función) |
+
+La costura ejecutable es el adapter [`pack.json`](pack.json) (contrato en [15](15-principios-agent-first.md) §Adapter): la maquinaria del método lee de ahí el feedback loop, patrones de archivos y guards de stack; sin el archivo rigen los defaults del pack de referencia. La elección de pack se registra en el **ADR-000** del proyecto ([10-checklist-dia-cero.md](10-checklist-dia-cero.md)); un stack distinto = autorar un pack conforme a la checklist de [15](15-principios-agent-first.md), no editar el método.
 
 ## Mapa de documentos
+
+**Método (agnóstico al stack):**
+
+| Doc | Contenido | Cuándo consultarlo |
+|---|---|---|
+| [09-agentes.md](09-agentes.md) | Integración con Claude Code: CLAUDE.md, hooks, skills, carga de contexto | Al configurar el agente en un proyecto nuevo |
+| [11-sistema-specs.md](11-sistema-specs.md) | Sistema de especificaciones: decisiones y porqués (snapshot, capa durable, umbrales, modos) | Ante dudas de si/cómo especificar un trabajo |
+| [12-guia-specs.md](12-guia-specs.md) | Guía operativa de specs: estructura, hashing, trazabilidad AC→test, skills, hooks | Al crear, cambiar o cerrar cualquier spec |
+| [13-onboarding.md](13-onboarding.md) | Tutorial de humano a humano: setup, ciclo completo de una feature, guardias y errores típicos | Primer día de un dev nuevo (el agente no lo carga) |
+| [14-roadmap-parking.md](14-roadmap-parking.md) | Plantilla del roadmap-parking de evoluciones por proyecto | Día cero, y cada vez que una idea quede fuera de alcance |
+| [plantillas/](plantillas/) | Plantillas canónicas: spec, plan, tasks, ADR, architecture, domain, CLAUDE.md | Al instanciar cualquier artefacto |
+
+**Principios:**
+
+| Doc | Contenido | Cuándo consultarlo |
+|---|---|---|
+| [15-principios-agent-first.md](15-principios-agent-first.md) | P1–P8 + checklist de conformidad de packs + contrato del adapter `pack.json` | Al autorar/evaluar un pack, al revisar la suite, y ante cualquier duda de "¿esto es método o stack?" |
+
+**Pack de referencia ts-monorepo:**
 
 | Doc | Contenido | Cuándo consultarlo |
 |---|---|---|
@@ -24,17 +56,12 @@ Suite de decisiones y convenciones de ingeniería para iniciar cualquier proyect
 | [06-testing.md](06-testing.md) | Estrategia de testing como feedback loop del agente (Test-Last/Test-First) | Al escribir tests o definir el test boundary de un módulo |
 | [07-seguridad-config.md](07-seguridad-config.md) | Env vars, secrets, auth, CSRF, validación de entrada | Setup inicial y features con superficie de seguridad |
 | [08-devops.md](08-devops.md) | Docker, CI/CD, perfiles de despliegue (VPS+Coolify / AWS-OCI), observabilidad | Setup de pipeline y despliegue |
-| [09-agentes.md](09-agentes.md) | Integración con Claude Code: CLAUDE.md, hooks, skills, carga de contexto | Al configurar el agente en un proyecto nuevo |
 | [10-checklist-dia-cero.md](10-checklist-dia-cero.md) | Checklist ejecutable para arrancar un proyecto | El primer día, en orden |
-| [11-sistema-specs.md](11-sistema-specs.md) | Sistema de especificaciones: decisiones y porqués (snapshot, capa durable, umbrales, modos) | Ante dudas de si/cómo especificar un trabajo |
-| [12-guia-specs.md](12-guia-specs.md) | Guía operativa de specs: estructura, hashing, trazabilidad AC→test, skills, hooks | Al crear, cambiar o cerrar cualquier spec |
-| [13-onboarding.md](13-onboarding.md) | Tutorial de humano a humano: setup, ciclo completo de una feature, guardias y errores típicos | Primer día de un dev nuevo (el agente no lo carga) |
-| [14-roadmap-parking.md](14-roadmap-parking.md) | Plantilla del roadmap-parking de evoluciones por proyecto | Día cero, y cada vez que una idea quede fuera de alcance |
-| [plantillas/](plantillas/) | Plantillas canónicas: spec, plan, tasks, ADR, architecture, domain, CLAUDE.md | Al instanciar cualquier artefacto |
+| [pack.json](pack.json) | Adapter del pack: feedback loop, patrones de archivos, guards de stack | Lo lee la maquinaria; el humano, al autorar un pack |
 
 ## Cómo usar esta suite
 
-1. **Al iniciar un proyecto:** instalar el harness (plugin `agent-foundation`: skills + hooks + esta suite) y ejecutar `/init-project`, que copia la suite completa (incluye `plantillas/`) a `docs/foundation/` e instancia CLAUDE.md, docs vivos y `specs/`. Después: [10-checklist-dia-cero.md](10-checklist-dia-cero.md). Ajustar solo lo que el proyecto exija de forma justificada; toda desviación se registra como ADR ([plantillas/plantilla-adr.md](plantillas/plantilla-adr.md)). La maquinaria (skills/hooks) NO se copia: viaja y se actualiza vía plugin; esta copia de docs es un snapshot deliberado.
+1. **Al iniciar un proyecto:** instalar el harness (plugin `agent-foundation`: skills + hooks + esta suite) y ejecutar `/init-project`, que copia la suite completa (incluye `plantillas/` y `pack.json`) a `docs/foundation/` e instancia CLAUDE.md, docs vivos y `specs/`. Después: [10-checklist-dia-cero.md](10-checklist-dia-cero.md). Ajustar solo lo que el proyecto exija de forma justificada; toda desviación se registra como ADR ([plantillas/plantilla-adr.md](plantillas/plantilla-adr.md)). La maquinaria (skills/hooks) NO se copia: viaja y se actualiza vía plugin; esta copia de docs es un snapshot deliberado.
 2. **Copia maestra y precedencia:** la copia maestra de esta suite vive en **ESTE repo** (`agent-foundation`) — regla de oro del ecosistema: repo (ejecutable) > set conceptual del vault > material de presentación. El vault de Obsidian guarda la doctrina (decisiones fundacionales, manuales de modo), el negocio y copias informativas; **toda edición de la suite se hace aquí y se propaga hacia el vault, nunca al revés**. (Regla corregida en v1.5: la inversa —"gana el vault"— causó la divergencia silenciosa de julio-2026.)
 3. **Para el agente:** NUNCA cargar la suite completa en contexto. El CLAUDE.md del proyecto referencia estos documentos y el agente carga solo el relevante para la tarea (progressive disclosure). Ver [09-agentes.md](09-agentes.md).
 
@@ -50,8 +77,11 @@ Suite de decisiones y convenciones de ingeniería para iniciar cualquier proyect
 | Auth, permisos, secrets | 07 |
 | Jobs en background / reactividad | 01 (pg-boss, polling) + 02 |
 | Crear / cambiar / cerrar una spec | 12 (+ 11 si hay duda de criterio) |
+| Autorar/evaluar un pack, revisar la suite | 15 |
 
 ## Principios rectores (resumen ejecutivo)
+
+Desarrollados como contrato de packs en [15-principios-agent-first.md](15-principios-agent-first.md) (P1–P8); resumen:
 
 1. **Boring technology + type safety end-to-end.** Los agentes rinden mejor sobre ecosistemas estables, bien representados en training data, con veredicto binario del tooling ("either it runs or it doesn't").
 2. **El harness importa más que el stack.** Antes de cambiar una librería, invertir en CLAUDE.md, hooks, skills y disciplina de contexto.
@@ -67,13 +97,14 @@ Esta suite sintetiza tres investigaciones (05-jul-2026): (a) panorama de stacks 
 
 ## Historial
 
+- **1.7 (2026-07-22) — Corte método / principios / pack + fixes de auditoría (excepción 2 al freeze, autorizada y CERRADA; registro en ROADMAP del repo).** La suite se re-declara en tres capas sin renumerar rutas: método (09, 11–14, plantillas, maquinaria), principios agent-first (doc nuevo [15](15-principios-agent-first.md), contrato para autorar packs) y pack de referencia ts-monorepo (01–08, 10). Campo `capa:` en el frontmatter de cada doc. Costura ejecutable: `docs/foundation/pack.json` — adapter que parametriza check-acs, verify-done, el marcador del feedback loop y los guards de stack; sin el archivo rigen los defaults del pack de referencia (comportamiento idéntico). Los ACs pasan a **numeración global por proyecto** (nunca reinician por spec; cierra la colisión del gate de trazabilidad con tests de features ya cerradas — [12](12-guia-specs.md) §3). archive-guard cubre el campo `pattern` de Glob. verify-done exige check Y test (marcador JSON por parte). CI del harness (GitHub Actions). El ADR-000 registra además el pack elegido. Plugin 0.5.0→0.6.0; batería 47→60 aserciones. El freeze sigue vigente.
 - **1.6 (2026-07-16) — Paquete pre-validación (excepción documentada y cerrada al freeze; registro en ROADMAP del repo).** Origen: contraste con el main flow de mattpocock/skills (`ANALISIS-vs-pocock.md`, vault). Criterio de entrada: solo doctrina ya escrita que la validación ejercita sí o sí — nada requirió diseño especulativo. Cambios: `plantilla-tasks` dimensiona fases por sesión (una fase ≈ una sesión, smart zone); `/new-spec` gana destilación de discusión previa y propuesta de diff de hechos durables al cerrar el grilling; skill nuevo **`/implement-task`** (mínimo, EN OBSERVACIÓN — contrato en 12-guia §7; la señal nueva del checkpoint en 11 decide si se consolida, crece o se elimina); cuarta señal de registro de la validación en 11 (fricción por sesión de implementación). Plugin 0.4.1→0.5.0. El freeze sigue vigente.
 - **1.5 (2026-07-16) — Reconciliación de líneas divergentes.** La suite del repo (1.x por doc, 07-06) y la copia del vault (v1.3 suite-wide, 07-14, "cosecha de ProjectAI") habían evolucionado en paralelo. Esta versión las fusiona con criterio "decisión más nueva gana; contenido único se preserva": del vault entran el Perfil B (VPS+Coolify) como default con doble perfil de despliegue, modo SPA como default de TanStack Start (con tripwire; resuelve el conflicto con el SSR-default del repo — los proyectos SSR van por ADR), pnpm sin corepack, short-polling exclusivo, pg-boss como componente de primera clase (`baseJobPayloadSchema` + `correlationId` + idempotencia), contratos como route builders con rutas registradas desde el contrato y presupuesto congelado del wrapper, capa UI (Shadcn+Tailwind v4+RHF), Test-Last/Test-First con prohibición de RTL, `errorComponent` obligatorio, escalera de estado, Squash and Merge, CLAUDE.md jerárquicos, `correlationId` (reemplaza `requestId`) y el doc 14 (roadmap-parking). Del repo se preservan: convenciones REST del boundary (02), secciones Idioma y Zod v4 anti-errores (04), patrón globalSetup de Testcontainers (06), CSRF (07), Build/ESM/tsx+tsup y umbrales de Bun y TanStack Form (01), checklist plugin-aware (10) y los docs 11-13. Se corrige la regla de copia maestra (ahora: el repo manda) y se unifica el versionado a nivel de suite (los números por-doc previos quedan supersedidos). El sistema de specs (11-12) incorpora los modos de operación (dual-mode D17) y los refinamientos de grilling.
 - **Líneas previas (resumen):** vault 1.1–1.3 (2026-07-14): Bun eliminado, TanStack Start SPA, contratos sin RPC, cosecha ProjectAI, optimización post-review y freeze. Repo 1.0–1.2 (2026-07-05/06): versión inicial, ronda 1 de iteración (simplificación de stack, harness endurecido), suite unificada con specs 11-12 y onboarding 13.
 
 ## Ciclo de vida de esta suite
 
-**FREEZE ACTIVO:** la suite queda congelada hasta completar la validación end-to-end con un proyecto real (checkpoint C1–C6, [11-sistema-specs.md](11-sistema-specs.md)). Durante el freeze no se agregan features; los hallazgos se registran como ADR del proyecto o notas de retro y alimentan la versión siguiente. (La reconciliación v1.5 es mantenimiento de decisiones ya tomadas, no feature nueva.) Al cerrar la validación, la telemetría de docs decide la poda: lo que el agente demostró no leer se elimina o se fusiona — menos texto normativo es una mejora, no una pérdida.
+**FREEZE ACTIVO:** la suite queda congelada hasta completar la validación end-to-end con un proyecto real (checkpoint C1–C6, [11-sistema-specs.md](11-sistema-specs.md)). Durante el freeze no se agregan features; los hallazgos se registran como ADR del proyecto o notas de retro y alimentan la versión siguiente. (Las dos excepciones —paquete pre-validación v1.6 y corte método/pack v1.7— están documentadas y CERRADAS en el ROADMAP del repo.) Al cerrar la validación, la telemetría de docs decide la poda: lo que el agente demostró no leer se elimina o se fusiona — menos texto normativo es una mejora, no una pérdida.
 
 - **Revisión programada:** al cerrar el proyecto de validación (fin del freeze); luego trimestral o por retro de proyecto.
 - **Versionado:** SemVer a nivel de suite en el frontmatter de cada doc. Cambios de decisión = minor; cambios de principio = major.

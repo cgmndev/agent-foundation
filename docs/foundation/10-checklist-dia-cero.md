@@ -1,9 +1,10 @@
 ---
 doc: checklist-dia-cero
-version: 1.6
-fecha: 2026-07-16
+version: 1.7
+fecha: 2026-07-22
 estado: vigente
 tipo: capa-durable
+capa: pack
 ---
 
 # 10 — Checklist Día Cero
@@ -12,7 +13,7 @@ Secuencia ejecutable para iniciar un proyecto nuevo. Objetivo: repo productivo c
 
 ## Fase 0 — Antes de escribir código
 
-- [ ] Kickoff con cliente cerrado: alcance macro, **perfil de despliegue y modelo de tenancy registrados como ADR-000** (default: Perfil B VPS + Coolify; Perfil A solo con gatillo de compliance/SLA/cloud existente del cliente — [08-devops.md](08-devops.md)), dominio DNS, y quién aprueba deploys a production.
+- [ ] Kickoff con cliente cerrado: alcance macro, **perfil de despliegue, modelo de tenancy y pack de stack registrados como ADR-000** (defaults: Perfil B VPS + Coolify — [08-devops.md](08-devops.md) — y pack de referencia ts-monorepo; un stack distinto exige autorar un pack conforme a [15-principios-agent-first.md](15-principios-agent-first.md), no editar el método), dominio DNS, y quién aprueba deploys a production.
 - [ ] Crear repo (privado) con branch protection en `main` (PR obligatoria, checks requeridos, solo Squash and Merge).
 - [ ] Harness instalado: `/plugin marketplace add cgmndev/agent-foundation` + `/plugin install agent-foundation@agent-foundation`.
 - [ ] `/init-project` ejecutado: copia esta suite a `docs/foundation/`, instancia `CLAUDE.md`, `docs/architecture.md`, `docs/domain.md` (glosario inicial), `docs/decisions/`, `specs/` y `.claude/settings.json`.

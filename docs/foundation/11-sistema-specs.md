@@ -1,10 +1,12 @@
 ---
 doc: sistema-specs
-version: 1.6
-fecha: 2026-07-16
+version: 1.7
+fecha: 2026-07-22
 estado: vigente
 tipo: capa-durable
+capa: metodo
 changelog:
+  - "1.7 (corte método/pack; excepción 2 al freeze — ROADMAP): IDs de AC únicos a nivel de PROYECTO (numeración global entre specs; cierra la colisión del gate de trazabilidad con tests de features cerradas). El sistema de specs queda declarado capa método (agnóstico al stack; 15-principios)."
   - "1.6 (paquete pre-validación; excepción documentada al freeze — ROADMAP): cuarta señal de registro del checkpoint (fricción por sesión de implementación) que decide el destino de /implement-task."
   - "1.5 (versionado unificado de suite): Decisión 9 — dos modos de operación (consultoría / producto propio, D17 de la capa conceptual): adversario, gate de aprobación y umbral extra por modo; refinamientos de grilling (facts vs decisions, una pregunta a la vez, confirmation gate) elevados a contrato en la guía; métricas adicionales del checkpoint."
   - "1.2: Integración en la suite unificada (doc 11). Diagnóstico comprimido a Fundamentos; radar de fuentes movido a 00-INDICE; roadmap retirado (pasa a spec del meta-repo); ejemplos alineados al stack final (Node LTS runtime); rutas canónicas: specs/ en raíz + docs/decisions/."
@@ -47,7 +49,7 @@ Donde las capas difieren, gana trinchera con matiz: conocimiento técnico in-rep
   3. `implemented` → mergeada; se mueve a `specs/archive/AAAA-MM/` y deja de ser contexto por defecto.
   4. `superseded` → invalidada explícitamente por otra spec (`superseded_by:` en frontmatter). Crítico para no contaminar contexto de LLM.
 - El **hashing SHA-256** se restringe a detectar staleness entre `spec.md` ↔ `plan.md` ↔ `tasks.md` *dentro de una feature activa* ([12-guia-specs.md](12-guia-specs.md) §2). No se usa para mantener specs históricas.
-- **Trazabilidad obligatoria AC → tests:** todo criterio recibe un ID estable (`AC-NN`) y todo test que lo verifica incluye el ID en su nombre. La verificación de `/close-spec` es mecánica (grep de IDs), no de buena voluntad (guía §3).
+- **Trazabilidad obligatoria AC → tests:** todo criterio recibe un ID estable (`AC-NN`) y todo test que lo verifica incluye el ID en su nombre. Los IDs son **únicos a nivel de proyecto**: la numeración continúa de una spec a la siguiente (la asigna `/new-spec` desde el máximo existente en `specs/`), nunca se reinicia en AC-01 por feature. Razón: la verificación es un grep global sobre tests que viven para siempre — con numeración por-spec, los tests de features cerradas satisfarían specs futuras y el gate se vaciaría. La verificación de `/close-spec` es mecánica (grep de IDs), no de buena voluntad (guía §3).
 - **Lo único que sobrevive de una spec al archivarse:** acceptance criteria → tests trazados por ID; decisiones arquitectónicas relevantes → ADR (Decisión 3); cambios de dominio → `docs/domain.md`.
 
 > Regla mnemotécnica: *la spec se tira, pero antes se le extraen los órganos*.

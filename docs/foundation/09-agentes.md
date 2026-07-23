@@ -1,9 +1,10 @@
 ---
 doc: agentes
-version: 1.6
-fecha: 2026-07-16
+version: 1.7
+fecha: 2026-07-22
 estado: vigente
 tipo: capa-durable
+capa: metodo
 ---
 
 # 09 — Integración con Agentes (Claude Code)
@@ -38,6 +39,8 @@ Presupuesto: <~150 líneas rellenada; lo que crezca se extrae a docs referenciad
 
 (Implementación: plugin `agent-foundation` — en el repo de la fundación: `hooks/hooks.json` como wiring y `scripts/guards/` con un guardia por archivo. Los proyectos lo reciben instalando el plugin, no copiando archivos. Verdictos: deny para lo prohibido; **ask** para lo que requiere aprobación humana en el momento — guardrails como trust infrastructure.)
 
+**Guards por capa (15-principios):** los de **método** (block-secrets, protect-main, archive-guard, drift-check) aplican en todo proyecto y no se pueden apagar; los de **stack** (guard-deps, guard-migrations) los declara el pack en `docs/foundation/pack.json` (campo `stackGuards`). El resto de la maquinaria parametrizable — qué comandos cuentan como feedback loop (verify-done exige **check Y test**), qué archivos disparan verify-done, dónde se buscan los `AC-NN` — también lee del adapter; sin `pack.json` rigen los defaults del pack de referencia.
+
 Capas de enforcement distintas y complementarias: estos hooks gobiernan al agente; lefthook (pre-commit git, [04-convenciones-codigo.md](04-convenciones-codigo.md)) y CI gobiernan a cualquier committer, humano o agente.
 
 ## Skills del proyecto
@@ -60,7 +63,7 @@ El CLAUDE.md raíz se mantiene corto (~150 líneas). Cuando una app acumula regl
 1. Sesión limpia → cargar CLAUDE.md (automático) + doc(s) de fundación según tabla + spec/task activa.
 2. Plan mode para tasks no triviales; el plan referencia los AC-NN.
 3. Implementar el vertical slice completo (DB → API → frontend si aplica).
-4. `pnpm check && pnpm test` → commit convencional → siguiente task o cierre.
+4. Feedback loop del pack (`pnpm check && pnpm test` en el de referencia) → commit convencional → siguiente task o cierre.
 5. Review SIEMPRE en sesión/contexto fresco (humano o sesión dedicada), nunca en la sesión implementadora — mecanizado con `/review-fresh` (agente `revisor`).
 6. Multi-task paralelo: git worktrees (2-3 máximo mientras el review sea el cuello de botella).
 
